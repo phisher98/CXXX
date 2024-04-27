@@ -1,4 +1,4 @@
-package com.javdoe
+package com.Javpoint
 
 //import android.util.Log
 import org.jsoup.nodes.Element
@@ -27,7 +27,7 @@ class Javdoe : MainAPI() {
         if (page == 1) {
             val document = app.get("$mainUrl/${request.data}/").document
             //Log.d("Test","$document")
-            val home = document.select("#content > div > div > div > ul > li")
+            val home = document.select("ul.videos > li")
                 .mapNotNull { it.toSearchResult() }
             //Log.d("Test", "$home")
             return newHomePageResponse(
@@ -42,7 +42,7 @@ class Javdoe : MainAPI() {
         else {
             val document = app.get("$mainUrl/${request.data}/$page/").document
             //Log.d("Test","$document")
-            val home = document.select("#content > div > div > div > ul > li")
+            val home = document.select("ul.videos > li")
                 .mapNotNull { it.toSearchResult() }
             //Log.d("Test", "$home")
             return newHomePageResponse(
@@ -69,10 +69,10 @@ class Javdoe : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
 
-        for (i in 1..5) {
+        for (i in 1..2) {
             val document = app.get("${mainUrl}/search/video/?s=$query&page=$i").document
 
-            val results = document.select("#content > div > div > div > ul > li").mapNotNull { it.toSearchResult() }
+            val results = document.select("ul.videos > li").mapNotNull { it.toSearchResult() }
 
             if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)
@@ -102,7 +102,6 @@ class Javdoe : MainAPI() {
                     this.posterUrl = recomposter
                 }
             }
-        //println(poster)
         return newMovieLoadResponse(title, url, TvType.NSFW, url) {
             this.posterUrl = poster
             this.plot      = description

@@ -1,8 +1,10 @@
-package com.javdoe
+package com.Javpoint
 
 //import android.util.Log
+import android.annotation.SuppressLint
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
+import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
@@ -168,3 +170,54 @@ open class Vidhidepro : ExtractorApi() {
 class Ds2Play : DoodLaExtractor() {
     override var mainUrl = "https://ds2play.com"
 }
+
+
+open class Javggvideo : ExtractorApi() {
+    override val name = "Javgg Video"
+    override val mainUrl = "https://javggvideo.xyz"
+    override val requiresReferer = false
+
+    @SuppressLint("SuspiciousIndentation")
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+    ): List<ExtractorLink>? {
+        val response =app.get(url).text
+        val link = response.substringAfter("var urlPlay = '").substringBefore("';")
+                return listOf(
+                    ExtractorLink(
+                        source = name,
+                        name = name,
+                        url = link,
+                        referer = referer ?: "$mainUrl/",
+                        quality = Qualities.Unknown.value,
+                        type = INFER_TYPE
+                    )
+                )
+    }
+}
+
+class Javlion : Vidhidepro() {
+    override var mainUrl = "https://javlion.xyz"
+    override val name = "Javlion"
+}
+
+class VidhideVIP : Vidhidepro() {
+    override var mainUrl = "https://vidhidevip.com"
+    override val name = "VidhideVIP"
+}
+class Javsw : Streamwish() {
+    override var mainUrl = "https://javsw.me"
+    override var name = "Javsw"
+}
+
+
+class Javmoon : Filesim() {
+    override val mainUrl = "https://javmoon.me"
+    override val name = "FileMoon"
+}
+
+class d000d : DoodLaExtractor() {
+    override var mainUrl = "https://d000d.com"
+}
+

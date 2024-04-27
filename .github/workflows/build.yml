@@ -9,9 +9,12 @@ on:
   push:
     branches:
       # choose your default branch
+      - master
       - main
     paths-ignore:
       - '*.md'
+
+permissions: write-all
 
 jobs:
   build:
@@ -29,7 +32,7 @@ jobs:
           path: "builds"
       
       - name: Clean old builds
-        run: rm $GITHUB_WORKSPACE/builds/*.cs3 || true
+        run: rm $GITHUB_WORKSPACE/builds/*.cs3
 
       - name: Setup JDK 11
         uses: actions/setup-java@v1
@@ -38,6 +41,7 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
+
 
       - name: Build Plugins
         run: |

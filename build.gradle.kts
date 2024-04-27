@@ -1,4 +1,4 @@
-import com.lagradost.cloudstream3.gradle.CloudstreamExtension 
+import com.lagradost.cloudstream3.gradle.CloudstreamExtension
 import com.android.build.gradle.BaseExtension
 
 buildscript {
@@ -45,6 +45,7 @@ subprojects {
         defaultConfig {
             minSdk = 21
             compileSdkVersion(33)
+            //noinspection OldTargetApi
             targetSdk = 33
         }
 
@@ -70,6 +71,7 @@ subprojects {
         val implementation by configurations
 
         // Stubs for all Cloudstream classes
+        //noinspection GradleDeprecatedConfiguration
         apk("com.lagradost:cloudstream3:pre-release")
 
         // these dependencies can include any of those which are added by the app,

@@ -1,0 +1,8 @@
+{
+    "name": "CXXX",
+    "description": "CXXX Repository",
+    "manifestVersion": 1,
+    "pluginLists": [
+      "https://raw.githubusercontent.com/phisher98/CXXX/builds/plugins.json"
+    ]
+  }

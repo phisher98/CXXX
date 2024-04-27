@@ -1,7 +1,7 @@
 name: Build
 
 # https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#concurrency
-concurrency: 
+concurrency:
   group: "build"
   cancel-in-progress: true
 
@@ -14,34 +14,32 @@ on:
     paths-ignore:
       - '*.md'
 
-permissions: write-all
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@master
+        uses: actions/checkout@v4
         with:
           path: "src"
 
       - name: Checkout builds
-        uses: actions/checkout@master
+        uses: actions/checkout@v4
         with:
           ref: "builds"
           path: "builds"
-      
+
       - name: Clean old builds
-        run: rm $GITHUB_WORKSPACE/builds/*.cs3
+        run: rm $GITHUB_WORKSPACE/builds/*.cs3 || true
 
       - name: Setup JDK 11
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v4
         with:
+          distribution: "adopt"
           java-version: 11
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
-
 
       - name: Build Plugins
         run: |

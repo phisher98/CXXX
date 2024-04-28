@@ -2,7 +2,7 @@ version = 4
 
 cloudstream {
     authors     = listOf("Coxju")
-    language    = "hi"
+    language    = "en"
     description = "We Provide Huge Colocation of Hindi Porn (Uncut) Web Series"
 
     /**
@@ -14,5 +14,5 @@ cloudstream {
     **/
     status  = 1 // will be 3 if unspecified
     tvTypes = listOf("NSFW")
-    iconUrl = "https://www.google.com/s2/favicons?domain=uncutmaza.cc&sz=%size%"
+    iconUrl = "https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://pornken.com&size=16"
 }

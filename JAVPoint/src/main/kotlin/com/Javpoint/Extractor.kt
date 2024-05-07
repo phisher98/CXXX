@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.extractors.Filesim
+import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
@@ -209,6 +210,15 @@ class VidhideVIP : Vidhidepro() {
 class Javsw : Streamwish() {
     override var mainUrl = "https://javsw.me"
     override var name = "Javsw"
+}
+
+class swhoi : Filesim() {
+    override var mainUrl = "https://swhoi.com"
+    override var name = "Streamwish"
+}
+
+class MixDropis : MixDrop(){
+    override var mainUrl = "https://mixdrop.is"
 }
 
 

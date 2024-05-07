@@ -1,11 +1,11 @@
 // use an integer for version numbers
-version = 4
+version = 5
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Javdoe"
+    description = "5+ Jav sources in one"
     language    = "en"
     authors = listOf("HindiProviders")
 

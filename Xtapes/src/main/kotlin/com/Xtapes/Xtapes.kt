@@ -19,7 +19,8 @@ class Xtapes : MainAPI() {
         "80026" to "BangBros",
         "53177" to "Brazzers",
         "61802" to "Naughty America",
-        "56050" to "Reality Kings"
+        "56050" to "Reality Kings",
+        "12096" to "Tonight's Girlfriend"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {

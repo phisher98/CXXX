@@ -23,7 +23,7 @@ class Xtapes : MainAPI() {
         "05415" to "Play Ground",
         "32718" to "Blacked",
         "12096" to "Tonight's Girlfriend",
-        "70587" to "Porn fidelity",
+        "70587" to "Porn Fidelity",
         "63704" to "Porn World",
         "41606" to "Mofos",
         "63416" to "Jules Jordan"

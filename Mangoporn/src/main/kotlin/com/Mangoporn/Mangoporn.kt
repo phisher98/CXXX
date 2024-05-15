@@ -35,7 +35,7 @@ class Mangoporn : MainAPI() {
         "genre/cumshots" to "Cumshots",
         "genre/facials" to "Facials",
         "genre/bdsm" to "BDSM",
-        "genre/threesomes" to Threesomes",
+        "genre/threesomes" to "Threesomes",
         "genre/gangbang" to "Gangbang",
         "genre/redheads" to "Red Heads",
         "genre/squirting" to "Squirting",

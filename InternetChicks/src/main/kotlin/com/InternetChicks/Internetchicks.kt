@@ -16,6 +16,8 @@ class internetchicks : MainAPI() {
 
     override val mainPage = mainPageOf(
         "category/onlyfans" to "Onlyfans",
+        "category/femdom" to "Femdom",
+        "category/asmr" to "ASMR",
         "category/patreon" to "Patreon",
         "category/manyvids" to "Random",
         "category/tiktok" to "Tiktok",

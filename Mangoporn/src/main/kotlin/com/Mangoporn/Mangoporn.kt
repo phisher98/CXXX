@@ -19,8 +19,32 @@ class Mangoporn : MainAPI() {
         "genre/russian" to "Russian",
         "studios/brazzers" to "Brazzers",
         "studios/bang-bros-productions" to "Bang Bros",
+        "studios/evil-angel" to "Evil Angle",
+        "studios/hustler" to "Hustler",
+        "studios/devils-film" to "Devil Film",
         "studios/reality-kings" to "Reality Kings",
-        "genre/family-roleplay" to "Family Roleplay"
+        "genre/family-roleplay" to "Family Roleplay",
+        "genre/parody" to "Parody",
+        "genre/18-teens" to "18+ Teens",
+        "genre/anal" to "Anal",
+        "genre/big-boobs" to "Big Boobs",
+        "genre/blondes" to "Blondes",
+        "genre/blowjobs" to "Blowjobs",
+        "genre/lesbian" to "Lesbian",
+        "genre/deep-throat" to "Deep Throat",
+        "genre/cumshots" to "Cumshots",
+        "genre/facials" to "Facials",
+        "genre/bdsm" to "BDSM",
+        "genre/threesomes" to "Threesomes",
+        "genre/gangbang" to "Gangbang",
+        "genre/redheads" to "Red Heads",
+        "genre/squirting" to "Squirting",
+        "genre/milf" to "MILF",
+        "genre/asian" to "Asian",
+
+        "genre/big-butt" to "Big Butt",
+        "genre/big-cock" to "Big Cock"
+
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {

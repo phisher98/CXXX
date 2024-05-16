@@ -30,7 +30,8 @@ class Xtapes : MainAPI() {
         "70587" to "Porn Fidelity",
         "63704" to "Porn World",
         "41606" to "Mofos",
-        "63416" to "Jules Jordan"     
+        "63416" to "Jules Jordan",
+        "category/lesbian-porn-videos" to "Lesbian" 
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {

@@ -21,12 +21,19 @@ class Xtapes : MainAPI() {
         "61802" to "Naughty America",
         "56050" to "Reality Kings",
         "05415" to "Play Ground",
+        "26761" to "Evil Angle",
+        "11007" to "Harmony Films",
+        "40100" to "New Sensations",
+        "37001" to "Sweet Sinner",
         "32718" to "Blacked",
         "12096" to "Tonight's Girlfriend",
         "70587" to "Porn Fidelity",
         "63704" to "Porn World",
         "41606" to "Mofos",
-        "63416" to "Jules Jordan"
+        "63416" to "Jules Jordan",
+        "47846" to "Big Tits",
+        "10657" to "Teen",
+        "45377" to "MILFS"     
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {

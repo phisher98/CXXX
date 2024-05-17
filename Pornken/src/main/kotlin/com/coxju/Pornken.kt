@@ -25,6 +25,9 @@ class Porn11 : MainAPI() {
             "playlist/bangbros/248746-327137" to "Bangbros",
             "playlist/japan/215132-126095" to "Japan",
             "playlist/brazzers/229889-170657" to "Milf"
+            "playlist/anal/166678-25817" to "Anal",
+            "playlist/blowjob/268666-305709" to "Blowjob",
+            "playlist/parody-cosplay/260331-243313" to "parody/cosplay"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {

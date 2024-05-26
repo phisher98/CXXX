@@ -89,6 +89,7 @@ subprojects {
         implementation("com.github.mezhevikin:http-request-kotlin:0.0.5")
         implementation("com.google.code.gson:gson:2.10")
         implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1")
+        implementation("com.google.cloud:google-cloud-translate:1.94.4")
     }
 }
 

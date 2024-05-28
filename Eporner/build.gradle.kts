@@ -1,4 +1,4 @@
-version = 1
+version = 2
 
 cloudstream {
     authors     = listOf("HindiProvider")
@@ -14,5 +14,5 @@ cloudstream {
     **/
     status  = 1 // will be 3 if unspecified
     tvTypes = listOf("NSFW")
-    iconUrl = "https://github.com/phisher98/TVVVV/blob/main/eporner.ico"
+    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/main/eporner.ico"
 }

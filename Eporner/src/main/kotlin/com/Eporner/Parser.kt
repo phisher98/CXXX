@@ -31,6 +31,12 @@ data class Sources(
 )
 
 data class Mp4(
+    @JsonProperty("2160p(4K) HD")
+    val n2160p4KHd: n2160p4KHd,
+    @JsonProperty("1440p(2K) HD")
+    val n1440p2KHd: n1440p2KHd,
+    @JsonProperty("1080p HD")
+    val n1080pHd: n1080pHd,
     @JsonProperty("720p HD")
     val n720pHd: n720pHd,
     @JsonProperty("480p")
@@ -39,6 +45,27 @@ data class Mp4(
     val n360p: n360p,
     @JsonProperty("240p")
     val n240p: n240p,
+)
+
+data class n2160p4KHd(
+    val labelShort: String,
+    val src: String,
+    val type: String,
+    val default: Boolean,
+)
+
+data class n1440p2KHd(
+    val labelShort: String,
+    val src: String,
+    val type: String,
+    val default: Boolean,
+)
+
+data class n1080pHd(
+    val labelShort: String,
+    val src: String,
+    val type: String,
+    val default: Boolean,
 )
 
 data class n720pHd(

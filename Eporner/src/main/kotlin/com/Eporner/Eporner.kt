@@ -1,36 +1,34 @@
-package com.coxju
+package com.Eporner
 
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.*
 
-class ixiporn : MainAPI() {
-    override var mainUrl              = "https://ixiporn.org"
-    override var name                 = "ixiporn"
+class Eporner : MainAPI() {
+    override var mainUrl              = "https://www.eporner.com"
+    override var name                 = "Eporner"
     override val hasMainPage          = true
-    override var lang                 = "hi"
-    override val hasQuickSearch       = false
+    override var lang                 = "en"
     override val hasDownloadSupport   = true
     override val hasChromecastSupport = true
     override val supportedTypes       = setOf(TvType.NSFW)
     override val vpnStatus            = VPNStatus.MightBeNeeded
 
     override val mainPage = mainPageOf(
-            "${mainUrl}/?filter=latest/page/" to "Latest Release",
-            "${mainUrl}/tag/ullu-web-series/page/" to "Ullu Web Series",
-            "${mainUrl}/search/Hunters/page/" to "Hunter Web Series",
-            "${mainUrl}/search/fugi/page/" to "Fugi Web Series",
-            "${mainUrl}/search/besharams/page/" to "Besharams Web Series",
-            "${mainUrl}/search/primeplay/page/" to "Prime Play",
-            "${mainUrl}/search/neonx/page/" to "Neonx",
-            "${mainUrl}/search/Bang+Bros/page/" to "BangBros",
-            "${mainUrl}/search/brazzers/page/" to "Brazzers",
-            "${mainUrl}/search/voovi/page/" to "Voovi Web Series",
-    )
+            "best-videos" to "Best Videos",
+            "top-rated" to "Top Rated",
+            "most-viewed" to "Most Viewed",
+            "cat/milf" to "Milf",
+            "cat/japanese" to "Japanese",
+            "cat/hd-1080p" to "1080 Porn",
+            "cat/4k-porn" to "4K Porn"
+
+        )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get(request.data + page).document
-        val home     = document.select("div.col-12.col-md-4.col-lg-3.col-xl-3 > div.video-block").mapNotNull { it.toSearchResult() }
+        val document = app.get("$mainUrl/${request.data}/$page/").document
+        val home     = document.select("#vidresults div.mb").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
             list    = HomePageList(
@@ -43,9 +41,9 @@ class ixiporn : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title     = fixTitle(this.select("a.infos").attr("title")).trim()
-        val href      = fixUrl(this.select("a.infos").attr("href"))
-        val posterUrl = fixUrlNull(this.select("a.thumb > img").attr("data-src"))
+        val title     = fixTitle(this.select("div.mbunder p a").text()).trim()
+        val href      = fixUrl(this.select("div.mbcontent a").attr("href"))
+        val posterUrl = fixUrlNull(this.select("div.mbcontent a img").attr("src"))
 
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
@@ -56,9 +54,9 @@ class ixiporn : MainAPI() {
         val searchResponse = mutableListOf<SearchResponse>()
 
         for (i in 1..10) {
-            val document = app.get("${mainUrl}/page/$i?s=$query").document
+            val document = app.get("${mainUrl}/search/$query/$i").document
 
-            val results = document.select("div.col-12.col-md-4.col-lg-3.col-xl-3 > div.video-block").mapNotNull { it.toSearchResult() }
+            val results = document.select("#vidresults div.mb").mapNotNull { it.toSearchResult() }
 
             if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)
@@ -87,20 +85,29 @@ class ixiporn : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).document
-
-        document.select("div.video-player").map { res ->
+        val response = app.get(
+            data, interceptor = WebViewResolver(Regex("""/xhr/video/"""))
+        ).parsedSafe<Root>()
+        val json=response?.sources?.mp4.toString()
+        val regex = Regex("labelShort=(.*?),\\ssrc=(.*?),")
+        val matches = regex.findAll(json)
+        val srcList = mutableListOf<Pair<String, String>>()
+        for (match in matches) {
+            val labelShort = match.groupValues[1]
+            val src = match.groupValues[2]
+            srcList.add(labelShort to src)
+        }
+        srcList.forEach { (labelShort, src) ->
             callback.invoke(
-                    ExtractorLink(
-                        source  = this.name,
-                        name    = this.name,
-                        url     = fixUrl(res.selectFirst("meta[itemprop=contentURL]")?.attr("content")?.trim().toString()),
-                        referer = data,
-                        quality = Qualities.Unknown.value
-                    )
+                ExtractorLink(
+                    source = name,
+                    name = name,
+                    url = src,
+                    referer = mainUrl,
+                    quality = getQualityFromName(labelShort)
+                )
             )
         }
-
         return true
     }
 }

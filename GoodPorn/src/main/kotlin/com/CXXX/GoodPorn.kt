@@ -1,6 +1,6 @@
 // ! https://github.com/hexated/cloudstream-extensions-hexated/blob/master/GoodPorn/src/main/kotlin/com/hexated/GoodPorn.kt
 
-package com.hexated
+package com.CXXX
 
 //import android.util.Log
 import org.jsoup.nodes.Element

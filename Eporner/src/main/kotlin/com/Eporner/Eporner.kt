@@ -86,10 +86,10 @@ class Eporner : MainAPI() {
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val response = app.get(
-            data, interceptor = WebViewResolver(Regex("""/xhr/video/"""))
-        ).parsedSafe<Root>()
-        val json=response?.sources?.mp4.toString()
-        val regex = Regex("labelShort=(.*?),\\ssrc=(.*?),")
+            data, interceptor = WebViewResolver(Regex("""https://www\.eporner\.com/xhr/video"""))
+        )
+        val json=response.text
+        val regex = Regex("labelShort\":\\s\"(.*?)\"|src\":\\s\"(.*)\"")
         val matches = regex.findAll(json)
         val srcList = mutableListOf<Pair<String, String>>()
         for (match in matches) {
@@ -98,15 +98,17 @@ class Eporner : MainAPI() {
             srcList.add(labelShort to src)
         }
         srcList.forEach { (labelShort, src) ->
-            callback.invoke(
-                ExtractorLink(
-                    source = name,
-                    name = name,
-                    url = src,
-                    referer = mainUrl,
-                    quality = getQualityFromName(labelShort)
+            if (!src.contains(".php")and(labelShort.isEmpty())) {
+                callback.invoke(
+                    ExtractorLink(
+                        source = name,
+                        name = name,
+                        url = src,
+                        referer = "",
+                        quality = getQualityFromName(labelShort)
+                    )
                 )
-            )
+            }
         }
         return true
     }

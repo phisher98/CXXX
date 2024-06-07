@@ -7,7 +7,7 @@ import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
 
 class NoodleMagazineProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://mat6tube.com"
+    override var mainUrl = "https://tyler-brown.com"
     override var name = "Noodle Magazine"
     override val hasMainPage = true
     override var lang = "en"

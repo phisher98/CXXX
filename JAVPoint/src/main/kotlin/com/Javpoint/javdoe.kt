@@ -59,7 +59,7 @@ class Javdoe : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title     = this.select("div.video > a").attr("title").trim()
         val href      = fixUrl(this.select("div.video > a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("div.video > a > div > img").attr("src"))
+        val posterUrl = fixUrlNull(this.select("div.video > a > div > img").attr("data-src"))
         //Log.d("Test","$posterUrl")
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl

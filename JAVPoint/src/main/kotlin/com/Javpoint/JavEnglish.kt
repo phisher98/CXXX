@@ -54,6 +54,7 @@ class JavEnglish : MainAPI() {
         val posterUrl = this.select("a > div.post-thumbnail img").attr("data-src")
         return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
+            posterHeaders = mapOf("Referer" to mainUrl)
         }
     }
 
@@ -102,6 +103,7 @@ class JavEnglish : MainAPI() {
             this.posterUrl = poster
             this.plot = description
             this.recommendations = recommendations
+            posterHeaders = mapOf("Referer" to mainUrl)
         }
     }
 

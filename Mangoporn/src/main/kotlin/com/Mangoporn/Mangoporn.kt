@@ -41,7 +41,6 @@ class Mangoporn : MainAPI() {
         "genre/squirting" to "Squirting",
         "genre/milf" to "MILF",
         "genre/asian" to "Asian",
-
         "genre/big-butt" to "Big Butt",
         "genre/big-cock" to "Big Cock"
 
@@ -119,7 +118,7 @@ class Mangoporn : MainAPI() {
         val document = app.get(url).document
 
         val title = document.selectFirst("div.data > h1")?.text().toString()
-        val poster = document.selectFirst("meta[property=og:image]")?.attr("content")?.trim().toString()
+        val poster = document.selectFirst("div.poster > img")?.attr("data-wpfc-original-src")?.trim().toString()
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
         val recommendations =
             document.select("ul.videos.related >  li").map {

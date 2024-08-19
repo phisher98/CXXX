@@ -19,7 +19,7 @@ import java.net.URI
 
 class TollyPro : MainAPI() {
 
-    override var mainUrl = "https://tellyhd.pro"
+    override var mainUrl = "https://tellyhd.net"
     override var name = "TellyHD"
     override val hasMainPage= true
     override var lang= "hi"

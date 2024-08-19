@@ -9,5 +9,6 @@ class TollyProProvider: Plugin() {
     override fun load(context: Context) {
         registerMainAPI(TollyPro())
         registerExtractorAPI(Ds2play())
+        registerExtractorAPI(Vidsp())
     }
 }

@@ -100,6 +100,7 @@ class Eporner : MainAPI() {
             while (qualities.hasNext()) {
                 val quality = qualities.next() as String
                 val sourceObject = source.getJSONObject(quality)
+                val labelShort = sourceObject.getString("labelShort")
                 val src = sourceObject.getString("src")
 
                 callback.invoke(
@@ -108,7 +109,7 @@ class Eporner : MainAPI() {
                         name = name,
                         url = src,
                         referer = "",
-                        getIndexQuality(quality)
+                        getIndexQuality(labelShort)
                     )
                 )
             }

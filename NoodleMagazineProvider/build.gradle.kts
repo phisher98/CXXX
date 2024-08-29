@@ -1,4 +1,4 @@
-version = 8
+version = 9
 
 
 cloudstream {
@@ -6,7 +6,7 @@ cloudstream {
     // All of these properties are optional, you can safely remove them
 
     description = "type .nofap in discord - Full Length"
-    authors = listOf("KillerDogeEmpire, Coxju")
+    authors = listOf("KillerDogeEmpire, Coxju, megix")
 
     /**
      * Status int as the following:

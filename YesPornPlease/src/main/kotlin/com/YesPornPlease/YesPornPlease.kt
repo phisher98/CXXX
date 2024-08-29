@@ -80,19 +80,23 @@ class YesPornPlease : MainAPI() {
         ): Boolean {
 
         val document = app.get(data).document
-        val iframeLink = document.select("iframe").get(1).attr("data-litespeed-src")
-        val iframeDocument = app.get(iframeLink).document
-        val link = iframeDocument.selectFirst("source").attr("src")
-
-        callback.invoke(
-            ExtractorLink(
-                this.name,
-                this.name,
-                link,
-                referer = mainUrl,
-                quality = Qualities.Unknown.value,
+        val iframes = document.select("iframe")
+        if(iframes.size >= 3) {
+            val thirdIframe = iframes[2]
+            val link = thirdIframe.attr("src")
+            val doc = app.get(link).document
+            val source = doc.selectFirst("video > source").attr("src")
+            callback.invoke(
+                ExtractorLink(
+                    this.name,
+                    this.name,
+                    source,
+                    referer = mainUrl,
+                    quality = Qualities.Unknown.value,
+                )
             )
-        )
+        }
+
         return true
     }
 }

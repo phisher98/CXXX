@@ -1,12 +1,12 @@
 // use an integer for version numbers
-version = 2
+version = 5
+
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "YesPornPlease"
-    language    = "en"
-    authors = listOf("megix")
+    description = "Pornhits"
+    authors = listOf("KillerDogeEmpire, Coxju")
 
     /**
     * Status int as the following:
@@ -21,5 +21,8 @@ cloudstream {
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("NSFW")
-    iconUrl = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR1xfGH3Q2FVINtuDKrS8FBP8uP2AHbKBxpeQ&s"
+
+    iconUrl = "https://www.google.com/s2/favicons?domain=pornhits.com&sz=%size%"
+
+    language = "en"
 }

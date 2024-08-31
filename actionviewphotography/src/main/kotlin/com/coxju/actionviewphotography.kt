@@ -1,18 +1,15 @@
 package com.coxju
 
-
-import com.google.gson.Gson
+import org.json.JSONObject
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-
-
 
 class actionviewphotography : MainAPI() {
     override var mainUrl              = "https://ukdevilz.com"
     override var name                 = "Noodle NSFW"
     override val hasMainPage          = true
-    override var lang                 = "hi"
+    override var lang                 = "en"
     override val hasQuickSearch       = false
     override val hasDownloadSupport   = true
     override val hasChromecastSupport = true
@@ -20,11 +17,11 @@ class actionviewphotography : MainAPI() {
     override val vpnStatus            = VPNStatus.MightBeNeeded
 
     override val mainPage = mainPageOf(
-            "video/milf" to "Milf",
-            "video/brattysis" to "Brattysis",
-            "video/web%20series" to "Web Series",
-            "video/japanese" to "Japanese",
-            "video/Step" to "Step category",
+        "video/milf" to "Milf",
+        "video/brattysis" to "Brattysis",
+        "video/web%20series" to "Web Series",
+        "video/japanese" to "Japanese",
+        "video/Step" to "Step category",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -83,32 +80,28 @@ class actionviewphotography : MainAPI() {
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        val embededurl=document.select("#iplayer").attr("src")
-        val properurldoc = app.get(mainUrl+embededurl).document
-        val properurldocactual=properurldoc.selectFirst("script:containsData(window.playlistUrl)")?.data().toString()
-        // Extracting Base64 encoded string using regex
-        val regex = Regex("""window\.playlistUrl='([^']+)';""")
-        val matchResult = regex.find(properurldocactual)
-        val playlistUrl = matchResult?.groups?.get(1)?.value
-        val sourcesurl= app.get(mainUrl+playlistUrl).document
-        val links=sourcesurl.body().text().toString().trim()
-        val gson = Gson()
-        val jsonObject = gson.fromJson(links, Map::class.java)
-        val sources = (jsonObject["sources"] as? List<Map<String, Any>>) ?: emptyList()
-        sources.forEach { source ->
-            val file = source["file"] as? String
-            val label = source["label"] as? String
-            callback.invoke(
-                ExtractorLink(
-                    source  = this.name,
-                    name    = this.name,
-                    url     = file.toString(),
-                    referer = data,
-                    quality = getQualityFromName(label)
+        val script = document.selectFirst("script:containsData(window.playlist)")
+        if (script != null) {
+            val jsonString = script.data()
+                .substringAfter("window.playlist = ")
+                .substringBefore(";")
+            val jsonObject = JSONObject(jsonString)
+            val sources = jsonObject.getJSONArray("sources")
+            val extlinkList = mutableListOf<ExtractorLink>()
 
+            for (i in 0 until sources.length()) {
+                val source = sources.getJSONObject(i)
+                extlinkList.add(
+                    ExtractorLink(
+                        source = name,
+                        name = name,
+                        url = source.getString("file"),
+                        referer = data,
+                        quality = getQualityFromName(source.getString("label"))
+                    )
                 )
-            )
-            //println("  File: $file, Label: $label")
+            }
+            extlinkList.forEach(callback)
         }
         return true
     }

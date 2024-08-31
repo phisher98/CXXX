@@ -1,7 +1,7 @@
-version = 6
+version = 7
 
 cloudstream {
-    authors     = listOf("Hindi Provider")
+    authors     = listOf("Hindi Provider, megix")
     language    = "en"
     description = "NSFW Search Videos"
 

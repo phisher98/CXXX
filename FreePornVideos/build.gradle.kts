@@ -3,7 +3,7 @@ version = 1
 cloudstream {
     authors     = listOf("HindiProviders")
     language    = "en"
-    description = "(VPN) Premium porn with 4K support"
+    description = "Premium porn with 4K support"
 
     /**
      * Status int as the following:

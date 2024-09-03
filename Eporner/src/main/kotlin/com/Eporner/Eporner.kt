@@ -29,7 +29,7 @@ class Eporner : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get("$mainUrl/${request.data}/$page/").document
-        val home = document.select("#vidresults div.mb").mapNotNull { it.toSearchResult() }
+        val home = document.select("div.mb.hdy").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
             list    = HomePageList(
@@ -44,8 +44,10 @@ class Eporner : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title = fixTitle(this.select("div.mbunder p a").text()).trim()
         val href = fixUrl(this.select("div.mbcontent a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("div.mbcontent a img").attr("src"))
-
+        var posterUrl = fixUrl(this.selectFirst("img").attr("data-src"))
+        if (posterUrl.isNullOrBlank()) {
+            posterUrl = fixUrl(this.selectFirst("img").attr("src"))
+        }
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }
@@ -57,7 +59,7 @@ class Eporner : MainAPI() {
         for (i in 1..10) {
             val document = app.get("${mainUrl}/search/$query/$i").document
 
-            val results = document.select("#vidresults div.mb").mapNotNull { it.toSearchResult() }
+            val results = document.select("div.mb.hdy").mapNotNull { it.toSearchResult() }
 
             if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)

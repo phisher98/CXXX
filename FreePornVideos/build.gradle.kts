@@ -1,7 +1,7 @@
 version = 1
 
 cloudstream {
-    authors     = listOf("Sora", "keyiflerolsun")
+    authors     = listOf("HindiProviders")
     language    = "en"
     description = "(VPN) Premium porn with 4K support"
 
@@ -12,7 +12,7 @@ cloudstream {
      * 2: Slow
      * 3: Beta only
     **/
-    status  = 0 // will be 3 if unspecified
+    status  = 1 // will be 3 if unspecified
     tvTypes = listOf("NSFW")
-    iconUrl = "https://www.google.com/s2/favicons?domain=goodporn.to&sz=%size%"
+    iconUrl = "https://www.google.com/s2/favicons?domain=freepornvideos.xxx&sz=%size%"
 }

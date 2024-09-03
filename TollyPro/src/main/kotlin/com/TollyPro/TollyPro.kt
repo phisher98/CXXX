@@ -2,7 +2,6 @@ package com.TollyPro
 
 //import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
@@ -12,14 +11,12 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.nodes.Element
-import java.net.URI
 
 class TollyPro : MainAPI() {
 
-    override var mainUrl = "https://tellyhd.net"
+    override var mainUrl = "https://tellyhd.life"
     override var name = "TellyHD"
     override val hasMainPage= true
     override var lang= "hi"
@@ -29,7 +26,6 @@ class TollyPro : MainAPI() {
     override val mainPage = mainPageOf(
         "trending" to "Trending",
         "movies" to "Movies",
-        "genre/netflix" to "Netflix",
         "genre/18" to "18+",
         "genre/jav" to "JAV"
     )
@@ -100,7 +96,7 @@ class TollyPro : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val request = app.get(url)
         val document = request.document
-        val directUrl = getBaseUrl(request.url)
+        //val directUrl = getBaseUrl(request.url)
         val title =
             document.selectFirst("div.data > h1")?.text()?.trim().toString()
         var posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
@@ -126,12 +122,6 @@ class TollyPro : MainAPI() {
             }
         }
 
-    private fun getBaseUrl(url: String): String {
-        return URI(url).let {
-            "${it.scheme}://${it.host}"
-        }
-    }
-
 
     override suspend fun loadLinks(
         data: String,
@@ -141,7 +131,7 @@ class TollyPro : MainAPI() {
     ): Boolean {
             val loadData = tryParseJson<LinkData>(data)
             val source = app.post(
-                url = "https://tellyhd.pro/wp-admin/admin-ajax.php", data = mapOf(
+                url = "https://tellyhd.life/wp-admin/admin-ajax.php", data = mapOf(
                     "action" to "doo_player_ajax", "post" to "${loadData?.post}", "nume" to "${loadData?.nume}", "type" to "${loadData?.type}"
                 ), referer = data, headers = mapOf("Accept" to "*/*", "X-Requested-With" to "XMLHttpRequest"
                 )).parsed<ResponseHash>().embed_url.getIframe()

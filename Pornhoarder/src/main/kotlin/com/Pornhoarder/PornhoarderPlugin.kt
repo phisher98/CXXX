@@ -9,7 +9,7 @@ import okhttp3.FormBody
 import org.json.JSONObject
 
 class PornhoarderPlugin : MainAPI() {
-    override var mainUrl              = "https://pornhoarder.org"
+    override var mainUrl              = "https://www1.pornhoarder.tv"
     override var name                 = "Pornhoarder"
     override val hasMainPage          = true
     override var lang                 = "en"
@@ -18,7 +18,7 @@ class PornhoarderPlugin : MainAPI() {
     override val supportedTypes       = setOf(TvType.NSFW)
     override val vpnStatus            = VPNStatus.MightBeNeeded
 
-    private val ajaxUrl = "https://pornhoarder.org/ajax_search.php"
+    private val ajaxUrl = "$mainUrl/ajax_search.php"
 
     override val mainPage = mainPageOf(
             "Latest" to "Latest Videos",

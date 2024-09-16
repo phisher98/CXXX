@@ -1,12 +1,9 @@
-package com.Eporner
+package com.PornhoarderPlugin
 
-import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.*
 import okhttp3.FormBody
-import org.json.JSONObject
 
 class PornhoarderPlugin : MainAPI() {
     override var mainUrl              = "https://www1.pornhoarder.tv"
@@ -33,7 +30,6 @@ class PornhoarderPlugin : MainAPI() {
             .addEncoded("search", query)
             .addEncoded("sort", if (isLatest) {"0"} else {"2"})
             .addEncoded("date", "0")
-            .addEncoded("servers[]", "21")
             .addEncoded("servers[]", "40")
             .addEncoded("servers[]", "45")
             .addEncoded("servers[]", "12")
@@ -70,7 +66,7 @@ class PornhoarderPlugin : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title = this.select(".video-content h1").text().replace("| PornHoarder.tv","")
         val href = mainUrl + this.select(".video-link").attr("href")
-        var posterUrl = this.selectFirst(".video-image.primary.b-lazy").attr("data-src")
+        val posterUrl = this.selectFirst(".video-image.primary.b-lazy")?.attr("data-src")
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }
@@ -125,18 +121,17 @@ class PornhoarderPlugin : MainAPI() {
             val urls = servers.select("li a")
             urls.forEach { item->
                 val hostUrl = "$mainUrl${item.attr("href")}"
-                val doc = app.get(hostUrl).document
-                val srcUrl = doc.select(".video-player iframe").attr("src")
+                val docurl = app.get(hostUrl).document
+                val srcUrl = docurl.select(".video-player iframe").attr("src")
                 serversList.add(srcUrl)
             }
         }
-
         serversList.forEach {item->
             val requestBody =FormBody.Builder()
                 .addEncoded("play", "")
                 .build()
-            val doc = app.post(item,requestBody = requestBody).document
-            val videoHosterUrl = doc.select("iframe").attr("src")
+            val doc1 = app.post(item,requestBody = requestBody).document
+            val videoHosterUrl = doc1.select("iframe").attr("src")
             loadExtractor(videoHosterUrl,subtitleCallback,callback)
         }
         return true

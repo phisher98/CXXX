@@ -1,5 +1,6 @@
 package com.coxju
 
+import com.lagradost.api.Log
 import org.json.JSONObject
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
@@ -80,23 +81,27 @@ class actionviewphotography : MainAPI() {
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
+        Log.d("Phisher",data)
         val script = document.selectFirst("script:containsData(window.playlist)")
         if (script != null) {
             val jsonString = script.data()
                 .substringAfter("window.playlist = ")
                 .substringBefore(";")
             val jsonObject = JSONObject(jsonString)
+            Log.d("Phisher",jsonObject.toString())
             val sources = jsonObject.getJSONArray("sources")
+            Log.d("Phisher",sources.toString())
             val extlinkList = mutableListOf<ExtractorLink>()
 
             for (i in 0 until sources.length()) {
                 val source = sources.getJSONObject(i)
+                Log.d("Phisher",source.toString())
                 extlinkList.add(
                     ExtractorLink(
                         source = name,
                         name = name,
-                        url = source.getString("file"),
-                        referer = data,
+                        url = httpsify( source.getString("file")),
+                        referer = "",
                         quality = getQualityFromName(source.getString("label"))
                     )
                 )

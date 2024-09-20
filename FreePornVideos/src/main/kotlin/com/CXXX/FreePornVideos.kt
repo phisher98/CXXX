@@ -54,12 +54,20 @@ class FreePornVideos : MainAPI() {
 
     }
 
+    fun String?.createSlug(): String? {
+        return this?.filter { it.isWhitespace() || it.isLetterOrDigit() }
+            ?.trim()
+            ?.replace("\\s+".toRegex(), "-")
+            ?.lowercase()
+    }
+
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
 
         for (i in 1..5) {
+            val searchquery=query.createSlug() ?:""
             val document = app.get(
-                "${mainUrl}/search/$query/")
+                "${mainUrl}/search/$searchquery/")
             .document
             val results = document.select("#custom_list_videos_videos_list_search_result_items > div.item").mapNotNull { it.toSearchResult() }
             searchResponse.addAll(results)

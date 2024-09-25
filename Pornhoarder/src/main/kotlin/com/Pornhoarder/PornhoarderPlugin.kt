@@ -6,7 +6,7 @@ import com.lagradost.cloudstream3.utils.*
 import okhttp3.FormBody
 
 class PornhoarderPlugin : MainAPI() {
-    override var mainUrl              = "https://www1.pornhoarder.tv"
+    override var mainUrl              = "https://www2.pornhoarder.tv"
     override var name                 = "Pornhoarder"
     override val hasMainPage          = true
     override var lang                 = "en"
@@ -76,7 +76,7 @@ class PornhoarderPlugin : MainAPI() {
 
         val searchResponse = mutableListOf<SearchResponse>()
 
-        for (i in 1..3) {
+        for (i in 1..5) {
             val requestBody = getRequestBody(query,true,i)
             val document = app.post(ajaxUrl, requestBody = requestBody).document
             //val document = app.get("${mainUrl}/page/$i/?s=$query").document

@@ -53,7 +53,7 @@ class SextbProvider : MainAPI() {
         val searchResponse = mutableListOf<SearchResponse>()
 
         for (i in 1..5) {
-            val document = app.get("$mainUrl/search/$query").document
+            val document = app.get("$mainUrl/search/$query/pg-$i").document
             //val document = app.get("${mainUrl}/page/$i/?s=$query").document
 
             val results = document.select(".tray-item").mapNotNull { it.toSearchResult() }

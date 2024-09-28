@@ -1,4 +1,4 @@
-package com.PornhoarderPlugin
+package com.MissAv
 
 import android.util.Log
 import org.jsoup.nodes.Element
@@ -32,7 +32,8 @@ class MissAVProvider : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title = this.select(".text-secondary").text()
+        val status = this.select(".bg-blue-800").text()
+        val title = if(!status.isNullOrBlank()){"[$status] "+ this.select(".text-secondary").text()} else {this.select(".text-secondary").text()}
         val href = this.select(".text-secondary").attr("href")
         val posterUrl = this.selectFirst(".w-full")?.attr("data-src")
         return newMovieSearchResponse(title, href, TvType.NSFW) {
@@ -44,19 +45,33 @@ class MissAVProvider : MainAPI() {
 
         val searchResponse = mutableListOf<SearchResponse>()
 
-        for (i in 1..10) {
+        for (i in 1..5) {
             val document = app.get("$mainUrl/en/search/$query?page=$i").document
             //val document = app.get("${mainUrl}/page/$i/?s=$query").document
 
             val results = document.select(".thumbnail").mapNotNull { it.toSearchResult() }
 
-            if (!searchResponse.containsAll(results)) {
+            if(!results.isNullOrEmpty())
+            {
+                for (result in results)
+                {
+                    if(!searchResponse.contains(result))
+                    {
+                        searchResponse.add(result)
+                    }
+                }
+            }
+            else
+            {
+                break
+            }
+            /*if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)
             } else {
                 break
             }
 
-            if (results.isEmpty()) break
+            if (results.isEmpty()) break*/
         }
 
         return searchResponse

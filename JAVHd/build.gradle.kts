@@ -3,7 +3,7 @@ version = 1
 cloudstream {
     authors     = listOf("salman731")
     language    = "en"
-    description = "Best Japan AV porn site, free forever, high speed, no lag, over 100,000 videos, daily update, no ads while playing video."
+    description = "The Best Free JAV online, Free Download and Watching jav porn videos. Tons of hot jav censored,Japanese tube,Japanese sex online. Update everyday, javhd.today are waiting for you. Enjoy!"
 
     /**
      * Status int as the following:
@@ -14,5 +14,5 @@ cloudstream {
     **/
     status  = 1 // will be 3 if unspecified
     tvTypes = listOf("NSFW")
-    iconUrl = "https://missav.com/missav/logo-square.png"
+    iconUrl = "https://javhd.today/logo/javhd1.png"
 }

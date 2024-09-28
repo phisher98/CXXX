@@ -1,18 +1,18 @@
-package com.Sextb
+package com.JAVHd
 
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
-import com.Sextb.Stbturbo
 import com.lagradost.cloudstream3.extractors.StreamTape
-import com.lagradost.cloudstream3.extractors.Wishonly
 
 @CloudstreamPlugin
-class SextbPlugin: Plugin() {
+class JAVHDPlugin: Plugin() {
     override fun load(context: Context) {
-        registerMainAPI(SextbProvider())
+        registerMainAPI(JAVHDProvider())
         registerExtractorAPI(StreamTape())
-        //registerExtractorAPI(Wishonly())
         registerExtractorAPI(Stbturbo())
+        registerExtractorAPI(Turbovid())
+        registerExtractorAPI(MyCloudZ())
+        registerExtractorAPI(Cloudwish())
     }
 }

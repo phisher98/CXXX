@@ -1,11 +1,8 @@
-package com.Sextb
+package com.JAVHd
 
-import com.lagradost.api.Log
-import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.extractors.StreamSB
-import com.lagradost.cloudstream3.extractors.StreamTape
+import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
@@ -15,8 +12,6 @@ open class Stbturbo : ExtractorApi() {
     override var name = "Stbturbo"
     override var mainUrl = "https://stbturbo.xyz/"
     override val requiresReferer = false
-
-
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         with(app.get(url)) {
@@ -40,7 +35,20 @@ open class Stbturbo : ExtractorApi() {
 
 
 
-/*
-class TapeAdvertisement : StreamTape() {
-    override var mainUrl = "https://tapeadvertisement.com/"
-}*/
+class Turbovid : Stbturbo() {
+    override var name = "Stbturbo"
+    override var mainUrl = "https://turbovid.xyz/"
+    override val requiresReferer = false
+}
+
+class MyCloudZ : VidhideExtractor() {
+    override var name = "MyCloudZ"
+    override var mainUrl = "https://mycloudz.cc/"
+    override val requiresReferer = false
+}
+
+class Cloudwish : StreamWishExtractor() {
+    override var name = "Cloudwish"
+    override var mainUrl = "https://cloudwish.xyz/"
+    override val requiresReferer = false
+}

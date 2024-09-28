@@ -16,8 +16,6 @@ class JAVHDProvider : MainAPI() {
     override val supportedTypes       = setOf(TvType.NSFW)
     override val vpnStatus            = VPNStatus.MightBeNeeded
 
-    private val ajaxUrl = "$mainUrl/ajax/player"
-
     override val mainPage = mainPageOf(
             "/releaseday/" to "Release Day",
             "/recent/" to "Latest Upadates",
@@ -47,14 +45,6 @@ class JAVHDProvider : MainAPI() {
             val responseList  = document.select("div.video").mapNotNull { it.toSearchResult() }
             return newHomePageResponse(HomePageList(request.name, responseList, isHorizontalImages = false),hasNext = true)
 
-    }
-
-    private fun getRequestBody (episode: String, filmId: String) : FormBody
-    {
-        return FormBody.Builder()
-            .addEncoded("episode", episode)
-            .addEncoded("filmId", filmId)
-            .build()
     }
 
     private fun Element.toSearchResult(): SearchResponse {

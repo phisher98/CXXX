@@ -6,7 +6,7 @@ import com.lagradost.cloudstream3.utils.*
 import okhttp3.FormBody
 
 class PornhoarderPlugin : MainAPI() {
-    override var mainUrl              = "https://www2.pornhoarder.tv"
+    override var mainUrl              = "https://pornhoarder.org"
     override var name                 = "Pornhoarder"
     override val hasMainPage          = true
     override var lang                 = "en"

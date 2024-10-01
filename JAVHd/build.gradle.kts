@@ -1,7 +1,7 @@
 version = 1
 
 cloudstream {
-    authors     = listOf("salman731")
+    authors     = listOf("luck731")
     language    = "en"
     description = "The Best Free JAV online, Free Download and Watching jav porn videos. Tons of hot jav censored,Japanese tube,Japanese sex online. Update everyday, javhd.today are waiting for you. Enjoy!"
 

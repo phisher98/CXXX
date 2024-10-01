@@ -1,7 +1,7 @@
 version = 4
 
 cloudstream {
-    authors     = listOf("salman731")
+    authors     = listOf("luck731")
     language    = "en"
     description = "Pornhoarder"
 

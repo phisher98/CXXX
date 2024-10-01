@@ -1,9 +1,9 @@
-version = 2
+version = 1
 
 cloudstream {
     authors     = listOf("luck731")
     language    = "en"
-    description = "Best Japan AV porn site, free forever, high speed, no lag, over 100,000 videos, daily update, no ads while playing video."
+    description = "Free Porn & HD Porno Videos in full length! Every minute new porn video for download and streaming. Tons of the Best XXX Movies daily from top porno tube PornOne."
 
     /**
      * Status int as the following:
@@ -14,5 +14,5 @@ cloudstream {
     **/
     status  = 1 // will be 3 if unspecified
     tvTypes = listOf("NSFW")
-    iconUrl = "https://missav.com/missav/logo-square.png"
+    iconUrl = "https://pornone.com/favicon.ico"
 }

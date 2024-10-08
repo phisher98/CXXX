@@ -16,7 +16,7 @@ import org.jsoup.nodes.Element
 
 class TollyPro : MainAPI() {
 
-    override var mainUrl = "https://tellyhd.life"
+    override var mainUrl = "https://tellyhd.sbs"
     override var name = "TellyHD"
     override val hasMainPage= true
     override var lang= "hi"
@@ -131,7 +131,7 @@ class TollyPro : MainAPI() {
     ): Boolean {
             val loadData = tryParseJson<LinkData>(data)
             val source = app.post(
-                url = "https://tellyhd.life/wp-admin/admin-ajax.php", data = mapOf(
+                url = "$mainUrl/wp-admin/admin-ajax.php", data = mapOf(
                     "action" to "doo_player_ajax", "post" to "${loadData?.post}", "nume" to "${loadData?.nume}", "type" to "${loadData?.type}"
                 ), referer = data, headers = mapOf("Accept" to "*/*", "X-Requested-With" to "XMLHttpRequest"
                 )).parsed<ResponseHash>().embed_url.getIframe()

@@ -1,9 +1,9 @@
-version = 4
+version = 1
 
 cloudstream {
     authors     = listOf("luck731")
     language    = "en"
-    description = "Pornhoarder"
+    description = "The Best Free JAV online, JAV DVD online, Stream JAV Online High Quality always updated daily."
 
     /**
      * Status int as the following:
@@ -14,5 +14,5 @@ cloudstream {
     **/
     status  = 1 // will be 3 if unspecified
     tvTypes = listOf("NSFW")
-    iconUrl = "https://imgur.com/download/bF7P7os/"
+    iconUrl = "https://sextb.net/images/logo.png?v=1"
 }

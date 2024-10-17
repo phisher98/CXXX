@@ -1,9 +1,9 @@
-version = 4
+version = 2
 
 cloudstream {
     authors     = listOf("luck731")
     language    = "en"
-    description = "Pornhoarder"
+    description = "Best Japan AV porn site, free forever, high speed, no lag, over 100,000 videos, daily update, no ads while playing video."
 
     /**
      * Status int as the following:
@@ -14,5 +14,5 @@ cloudstream {
     **/
     status  = 1 // will be 3 if unspecified
     tvTypes = listOf("NSFW")
-    iconUrl = "https://imgur.com/download/bF7P7os/"
+    iconUrl = "https://missav.com/missav/logo-square.png"
 }

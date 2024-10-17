@@ -2,7 +2,7 @@ package com.TollyPro
 
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
-import android.content.Context
+import android.content.Contex
 
 @CloudstreamPlugin
 class TollyProProvider: Plugin() {
@@ -10,5 +10,7 @@ class TollyProProvider: Plugin() {
         registerMainAPI(TollyPro())
         registerExtractorAPI(Ds2play())
         registerExtractorAPI(Vidsp())
+        registerExtractorAPI(VidHidePro3())
+        registerExtractorAPI(VidHideplus())
     }
 }

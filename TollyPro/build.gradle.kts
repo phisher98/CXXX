@@ -1,7 +1,7 @@
-version = 15
+version = 16
 
 cloudstream {
-    authors     = listOf("HindiProvider")
+    authors     = listOf("Phisher98")
     language    = "hi"
     description = "TollyPro Jav,18+ webseries"
 

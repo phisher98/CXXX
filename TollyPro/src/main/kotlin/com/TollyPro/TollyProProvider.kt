@@ -2,7 +2,6 @@ package com.TollyPro
 
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
-import com.lagradost.cloudstream3.extractors.VidHidePro3
 import android.content.Contex
 
 @CloudstreamPlugin

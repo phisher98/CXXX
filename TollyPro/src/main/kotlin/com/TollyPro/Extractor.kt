@@ -10,6 +10,10 @@ class Vidsp : VidhideExtractor() {
     override var mainUrl = "https://vidsp.lol"
 }
 
+class VidHideplus : VidHidePro() {
+    override var mainUrl = "https://vidhideplus.com"
+}
+
 open class Ds2play : ExtractorApi() {
     override var name = "DoodStream"
     override var mainUrl = "https://ds2play.com"

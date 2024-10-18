@@ -10,5 +10,7 @@ class TollyProProvider: Plugin() {
         registerMainAPI(TollyPro())
         registerExtractorAPI(Ds2play())
         registerExtractorAPI(Vidsp())
+        registerExtractorAPI(VidHidePro3())
+        registerExtractorAPI(VidHideplus())
     }
 }

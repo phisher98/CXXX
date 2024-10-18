@@ -11,7 +11,7 @@ class Vidsp : VidhideExtractor() {
     override var mainUrl = "https://vidsp.lol"
 }
 
-class VidHideplus : VidHideExtractor() {
+class VidHideplus : VidhideExtractor() {
     override var mainUrl = "https://vidhideplus.com"
 }
 

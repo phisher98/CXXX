@@ -1,9 +1,9 @@
-version = 1
+version = 2
 
 cloudstream {
-    authors     = listOf("Sora", "keyiflerolsun")
+    authors     = listOf("Phishe")
     language    = "en"
-    description = "(VPN) Premium porn with 4K support"
+    description = "(VPN) Premium Porn with 4K support"
 
     /**
      * Status int as the following:
@@ -12,7 +12,7 @@ cloudstream {
      * 2: Slow
      * 3: Beta only
     **/
-    status  = 0 // will be 3 if unspecified
+    status  = 1// will be 3 if unspecified
     tvTypes = listOf("NSFW")
-    iconUrl = "https://www.google.com/s2/favicons?domain=goodporn.to&sz=%size%"
+    iconUrl = "https://www.google.com/s2/favicons?domain=hqporner.com&sz=%size%"
 }

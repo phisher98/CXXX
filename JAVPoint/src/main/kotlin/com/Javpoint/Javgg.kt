@@ -112,7 +112,7 @@ class Javgg : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data).document
-        document.select("ul#playeroptionsul > li").map {
+        document.select("https://javgg.net").map {
             Triple(
                 it.attr("data-type"),
                 it.attr("data-post"),

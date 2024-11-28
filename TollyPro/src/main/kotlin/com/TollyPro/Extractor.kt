@@ -14,6 +14,10 @@ class Vidsp : VidhideExtractor() {
 class VidHideplus : VidhideExtractor() {
     override var mainUrl = "https://vidhideplus.com"
 }
+class VidHidedht: VidhideExtractor() {
+    override var mainUrl = "https://dhtpre.com"
+}
+
 
 open class Ds2play : ExtractorApi() {
     override var name = "DoodStream"

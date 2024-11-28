@@ -2,9 +2,9 @@ package com.Eporner
 
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.*
 import org.json.JSONObject
+import java.math.BigInteger
 
 class Eporner : MainAPI() {
     override var mainUrl              = "https://www.eporner.com"
@@ -29,8 +29,7 @@ class Eporner : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get("$mainUrl/${request.data}/$page/").document
-        val home = document.select("div.mb.hdy").mapNotNull { it.toSearchResult() }
-
+        val home = document.select("#div-search-results div.mb").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(
             list    = HomePageList(
                 name = request.name,
@@ -42,11 +41,12 @@ class Eporner : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title = fixTitle(this.select("div.mbunder p a").text()).trim()
+        val title = fixTitle(this.select("div.mbunder p.mbtit a").text() ?: "No Title").trim()
         val href = fixUrl(this.select("div.mbcontent a").attr("href"))
-        var posterUrl = fixUrl(this.selectFirst("img").attr("data-src"))
-        if (posterUrl.isNullOrBlank()) {
-            posterUrl = fixUrl(this.selectFirst("img").attr("src"))
+        var posterUrl = this.selectFirst("img")?.attr("data-src")
+        if (posterUrl.isNullOrBlank())
+        {
+            posterUrl=this.selectFirst("img")?.attr("src")
         }
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
@@ -54,23 +54,11 @@ class Eporner : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val searchResponse = mutableListOf<SearchResponse>()
-
-        for (i in 1..10) {
-            val document = app.get("${mainUrl}/search/$query/$i").document
-
-            val results = document.select("div.mb.hdy").mapNotNull { it.toSearchResult() }
-
-            if (!searchResponse.containsAll(results)) {
-                searchResponse.addAll(results)
-            } else {
-                break
-            }
-
-            if (results.isEmpty()) break
-        }
-
-        return searchResponse
+        val subquery=query.replace(" ","-")
+        val document = app.get("${mainUrl}/search/$subquery/").document
+        val results = document.select("div.mb").mapNotNull {
+            it.toSearchResult() }
+        return results
     }
 
     override suspend fun load(url: String): LoadResponse {
@@ -88,11 +76,12 @@ class Eporner : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val response = app.get(
-            data, interceptor = WebViewResolver(Regex("""https://www\.eporner\.com/xhr/video"""))
-        )
-        val json = response.text
-
+        val doc= app.get(data).toString()
+        val vid=Regex("EP.video.player.vid = '([^']+)'").find(doc)?.groupValues?.get(1).toString()
+        val hash=Regex("EP.video.player.hash = '([^']+)'").find(doc)?.groupValues?.get(1).toString()
+        val url="https://www.eporner.com/xhr/video/$vid?hash=${base36(hash)}"
+        //Log.d("Phisher",url)
+        val json= app.get(url).toString()
         val jsonObject = JSONObject(json)
         val sources = jsonObject.getJSONObject("sources")
         val mp4Sources = sources.getJSONObject("mp4")
@@ -114,7 +103,20 @@ class Eporner : MainAPI() {
         }
         return true
     }
+// Thanks to https://github.com/alfa-addon/addon/blob/2a3c9d5e4d35f8420e680d2ee8dd31291bbc727e/plugin.video.alfa/servers/eporner.py#L26 for Code
+    fun base36(hash: String): String {
+        return if (hash.length >= 32) {
+            // Split the hash into 4 parts, convert each part to base36, and concatenate the results
+            val part1 = BigInteger(hash.substring(0, 8), 16).toString(36)
+            val part2 = BigInteger(hash.substring(8, 16), 16).toString(36)
+            val part3 = BigInteger(hash.substring(16, 24), 16).toString(36)
+            val part4 = BigInteger(hash.substring(24, 32), 16).toString(36)
 
+            part1 + part2 + part3 + part4
+        } else {
+            throw IllegalArgumentException("Hash length is invalid")
+        }
+    }
     private fun getIndexQuality(str: String?): Int {
         return Regex("(\\d{3,4})[pP]").find(str ?: "") ?. groupValues ?. getOrNull(1) ?. toIntOrNull()
             ?: Qualities.Unknown.value

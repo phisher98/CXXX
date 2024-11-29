@@ -1,9 +1,9 @@
-version = 8
+version = 15
 
 cloudstream {
-    authors     = listOf("HindiProvider, megix")
+    authors     = listOf("Phisher98")
     language    = "en"
-    description = "Eporner"
+    description = "Indian 18+ Web Series"
 
     /**
      * Status int as the following:
@@ -14,5 +14,5 @@ cloudstream {
     **/
     status  = 1 // will be 3 if unspecified
     tvTypes = listOf("NSFW")
-    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/main/eporner.ico"
+    iconUrl = "https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://xmaza.net&size=16"
 }

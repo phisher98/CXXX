@@ -1,6 +1,5 @@
 package com.TollyPro
 
-//import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.SubtitleFile
@@ -16,7 +15,7 @@ import org.jsoup.nodes.Element
 
 class TollyPro : MainAPI() {
 
-    override var mainUrl = "https://tellyhd.live"
+    override var mainUrl = "https://tellyhd.icu"
     override var name = "TellyHD"
     override val hasMainPage= true
     override var lang= "hi"

@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.loadExtractor
 
 class SxyPrn : MainAPI() {
     override var mainUrl = "https://sxyprn.com"
@@ -119,6 +120,9 @@ class SxyPrn : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data).document
+        document.select("div.post_el_wrap a.extlink").map {
+            loadExtractor(it.attr("href"), "", subtitleCallback, callback)
+        }
         val parsed = AppUtils.parseJson<Map<String, String>>(
             document.select("span.vidsnfo").attr("data-vnfo")
         )

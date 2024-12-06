@@ -80,17 +80,9 @@ class Mangoporn : MainAPI() {
     private fun Element.toSearchingResult(): SearchResponse {
         val title = this.select("div.details a").text()
         val href = fixUrl(this.select("div.image a").attr("href"))
-        val posterUrl = this.select("div.image img").attr("data-wpfc-original-src")
-        return if (!posterUrl.contains(".jpg")) {
-            val poster=this.select("div.poster > img").attr("src")
-            newMovieSearchResponse(title, href, TvType.NSFW) {
-                this.posterUrl = poster
-            }
-        } else {
-            val poster=posterUrl
-            newMovieSearchResponse(title, href, TvType.NSFW) {
-                this.posterUrl = poster
-            }
+        val posterUrl = this.select("div.image img").attr("src")
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
+            this.posterUrl = posterUrl
         }
     }
 

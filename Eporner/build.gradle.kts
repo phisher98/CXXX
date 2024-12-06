@@ -1,4 +1,4 @@
-version = 6
+version = 8
 
 cloudstream {
     authors     = listOf("HindiProvider, megix")

@@ -59,13 +59,22 @@ class Javangel : MainAPI() {
         }
     }
 
+    private fun Element.toSearchResult2(): SearchResponse {
+        val title     = this.select("a").attr("title").trim()
+        val href      = fixUrl(this.select("a").attr("href"))
+        val posterUrl = fixUrlNull(this.select("a > img").attr("src"))
+        return newMovieSearchResponse(title, href, TvType.Movie) {
+            this.posterUrl = posterUrl
+        }
+    }
+
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
 
-        for (i in 1..2) {
+        for (i in 1..4) {
             val document = app.get("${mainUrl}/search/video/?s=$query&page=$i").document
 
-            val results = document.select("ul.videos > li").mapNotNull { it.toSearchResult() }
+            val results = document.select("div.td-module-thumb").mapNotNull { it.toSearchResult2() }
 
             if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)

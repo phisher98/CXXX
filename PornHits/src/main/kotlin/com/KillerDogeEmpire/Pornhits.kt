@@ -44,7 +44,7 @@ class Pornhits : MainAPI() {
     ): HomePageResponse {
         val document = app.get(request.data.format(page)).document
         val home =
-            document.select("div.main-content section.main-container div.list-videos article.item")
+            document.select("article.item")
                 .mapNotNull {
                     it.toSearchResult()
                 }
@@ -58,7 +58,8 @@ class Pornhits : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse? {
         val title = this.selectFirst("div.item-info h2.title")?.text() ?: return null
         val href = fixUrl(this.selectFirst("a")!!.attr("href"))
-        val posterUrl = fixUrlNull(this.select("a div.img img").attr("data-original"))
+        var posterUrl = fixUrlNull(this.select("a div.img img").attr("data-original"))
+        if(posterUrl.isNullOrEmpty()) posterUrl = fixUrlNull(this.select("a div.img img").attr("src"))
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }
@@ -72,7 +73,7 @@ class Pornhits : MainAPI() {
                 "$mainUrl/videos.php?p=${i}&q=${query.trim().replace(" ", "+")}"
             ).document
             val results =
-                document.select("div.main-content section.main-container div.list-videos article.item")
+                document.select("article.item")
                     .mapNotNull {
                         it.toSearchResult()
                     }

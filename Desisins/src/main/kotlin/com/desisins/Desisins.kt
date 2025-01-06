@@ -1,11 +1,9 @@
 package com.desisins
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
 import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
 
 class Desisins : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://desisins.com"
@@ -30,7 +28,7 @@ class Desisins : MainAPI() { // all providers must be an instance of MainAPI
             )
         ).text
 
-        var document=  Jsoup.parse(response)
+        val document=  Jsoup.parse(response)
         return document.select("div.home_post_cont").mapNotNull {
             toResult(it)
         }
@@ -38,7 +36,7 @@ class Desisins : MainAPI() { // all providers must be an instance of MainAPI
     private fun toResult(post: Element): SearchResponse {
         val url = post.select("h3 > a").attr("href")
         val title = post.select("h3 > a").text()
-        var imageUrl = post.select("img").attr("src")
+        val imageUrl = post.select("img").attr("src")
        // Log.d("post",post.toString())
         //val quality = post.select(".video-label").text()
         return newMovieSearchResponse(title, url, TvType.Movie) {
@@ -90,7 +88,7 @@ class Desisins : MainAPI() { // all providers must be an instance of MainAPI
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
-        val title = document.selectFirst("h1").text()
+        val title = document.selectFirst("h1")?.text() ?:""
         //val poster = fixUrlNull(document.select("h2 > img").first()?.attr("src"))
         return newMovieLoadResponse(title, url, TvType.Movie, url) {
             this.posterUrl = ""
@@ -104,7 +102,7 @@ class Desisins : MainAPI() { // all providers must be an instance of MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        var src = app.get(data).document.select("iframe").attr("src")
+        val src = app.get(data).document.select("iframe").attr("src")
         
         //Log.d("link",src)
         loadExtractor(

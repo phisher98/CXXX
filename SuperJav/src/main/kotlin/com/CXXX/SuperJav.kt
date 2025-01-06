@@ -22,6 +22,7 @@ class SuperJav : MainAPI() {
         "tag/4k" to "4K",
         "tag/stepmother" to "Step Mother",
         "tag/tits" to "Tits",
+        "reducing-mosaic" to "Reducing Mosaic",
         "tag/4k" to "",
     )
 

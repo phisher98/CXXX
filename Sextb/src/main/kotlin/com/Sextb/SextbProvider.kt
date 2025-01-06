@@ -1,6 +1,5 @@
 package com.Sextb
 
-import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -88,7 +87,7 @@ class SextbProvider : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val doc = app.get(data).document
         val episodeList = doc.select(".episode-list .btn-player")
-        var sourceId = doc.selectFirst(".episode-list .btn-player").attr("data-source")
+        val sourceId = doc.selectFirst(".episode-list .btn-player")?.attr("data-source") ?:""
         episodeList.forEach { item->
             val requestBody = getRequestBody(item.attr("data-id"),sourceId)
             val doc =app.post(ajaxUrl,requestBody =requestBody).document

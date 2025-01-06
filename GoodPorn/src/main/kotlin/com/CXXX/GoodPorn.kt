@@ -10,7 +10,7 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import java.util.*
 
 class GoodPorn : MainAPI() {
-    override var mainUrl              = "https://goodporn.to"
+    override var mainUrl              = "https://www.fpo.xxx"
     override var name                 = "GoodPorn"
     override val hasMainPage          = true
     override var lang                 = "en"
@@ -30,7 +30,8 @@ class GoodPorn : MainAPI() {
         "${mainUrl}/channels/digitalplayground/?mode=async&function=get_block&block_id=list_videos_common_videos_list&sort_by=post_date&from=" to "Digital Playground",
         "${mainUrl}/channels/realitykings/?mode=async&function=get_block&block_id=list_videos_common_videos_list&sort_by=post_date&from="      to "Realitykings",
         "${mainUrl}/channels/babes-network/?mode=async&function=get_block&block_id=list_videos_common_videos_list&sort_by=post_date&from="     to "Babes Network",
-        "${mainUrl}/categories/amateur/?mode=async&function=get_block&block_id=list_videos_common_videos_list&sort_by=post_date&from="         to "Amateur"
+        "${mainUrl}/categories/amateur/?mode=async&function=get_block&block_id=list_videos_common_videos_list&sort_by=post_date&from="         to "Amateur",
+        "${mainUrl}/popular-2/" to "New"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {

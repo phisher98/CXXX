@@ -36,11 +36,11 @@ class YesPornPlease : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title = this.selectFirst("a").attr("title")
-        val href = this.selectFirst("a").attr("href")
-        var posterUrl = this.selectFirst("a > img").attr("data-src") ?: ""
+        val title = this.selectFirst("a")?.attr("title") ?:""
+        val href = this.selectFirst("a")?.attr("href") ?:""
+        var posterUrl = this.selectFirst("a > img")?.attr("data-src") ?: ""
         if(posterUrl.isEmpty()) {
-            posterUrl = this.selectFirst("a > img").attr("src")
+            posterUrl = this.selectFirst("a > img")?.attr("src") ?:""
         }
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
@@ -65,8 +65,8 @@ class YesPornPlease : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
-        val title = document.selectFirst("meta[property=og:title]").attr("content")
-        val posterUrl = document.selectFirst("meta[property=og:image]").attr("content")
+        val title = document.selectFirst("meta[property=og:title]")?.attr("content") ?:""
+        val posterUrl = document.selectFirst("meta[property=og:image]")?.attr("content") ?:""
         return newMovieLoadResponse(title, url, TvType.NSFW, url) {
             this.posterUrl = posterUrl
         }
@@ -85,7 +85,7 @@ class YesPornPlease : MainAPI() {
             val thirdIframe = iframes[2]
             val link = thirdIframe.attr("src")
             val doc = app.get(link).document
-            val source = doc.selectFirst("video > source").attr("src")
+            val source = doc.selectFirst("video > source")?.attr("src") ?:""
             callback.invoke(
                 ExtractorLink(
                     this.name,

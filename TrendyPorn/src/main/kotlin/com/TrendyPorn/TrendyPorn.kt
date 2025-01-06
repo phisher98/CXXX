@@ -62,8 +62,8 @@ class TrendyPorn : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
-        val title = document.selectFirst("meta[property=og:title]").attr("content")
-        val posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]").attr("content"))
+        val title = document.selectFirst("meta[property=og:title]")?.attr("content") ?:""
+        val posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content")) ?:""
 
         return newMovieLoadResponse(title, url, TvType.NSFW, url) {
             this.posterUrl = posterUrl
@@ -78,7 +78,7 @@ class TrendyPorn : MainAPI() {
         ): Boolean {
 
         val document = app.get(data).document
-        val link = document.selectFirst("source").attr("src")
+        val link = document.selectFirst("source")?.attr("src") ?:""
 
         callback.invoke(
             ExtractorLink(

@@ -1,6 +1,6 @@
 package com.Mangoporn
 
-import android.os.Build
+import android.annotation.SuppressLint
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
@@ -15,7 +15,6 @@ import org.mozilla.javascript.NativeObject
 import org.mozilla.javascript.Scriptable
 import java.util.Base64
 import android.util.Log
-import androidx.annotation.RequiresApi
 import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.utils.JsUnpacker
 
@@ -59,7 +58,6 @@ open class Vidguardto : ExtractorApi() {
     override val mainUrl = "https://vidguard.to"
     override val requiresReferer = false
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun getUrl(
         url: String,
         referer: String?,
@@ -85,7 +83,7 @@ open class Vidguardto : ExtractorApi() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    @SuppressLint("NewApi")
     private fun sigDecode(url: String): String {
         val sig = url.split("sig=")[1].split("&")[0]
         var t = ""

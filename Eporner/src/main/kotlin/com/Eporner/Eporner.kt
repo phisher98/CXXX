@@ -58,10 +58,24 @@ class Eporner : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val subquery=query.replace(" ","-")
-        val document = app.get("${mainUrl}/search/$subquery/").document
-        val results = document.select("div.mb").mapNotNull {
-            it.toSearchResult() }
-        return results
+        val searchResponse = mutableListOf<SearchResponse>()
+
+        for (i in 1..10) {
+            val document = app.get("${mainUrl}/search/$subquery/$i").document
+            //val document = app.get("${mainUrl}/page/$i/?s=$query").document
+
+            val results = document.select("div.mb").mapNotNull {
+                it.toSearchResult() }
+
+            if (!searchResponse.containsAll(results)) {
+                searchResponse.addAll(results)
+            } else {
+                break
+            }
+
+            if (results.isEmpty()) break
+        }
+        return searchResponse
     }
 
     override suspend fun load(url: String): LoadResponse {

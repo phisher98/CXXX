@@ -5,7 +5,8 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
-import com.lagradost.cloudstream3.extractors.VidHidePro
+import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.Qualities
 
 class Vidsp : VidhideExtractor() {
     override var mainUrl = "https://vidsp.lol"
@@ -18,6 +19,9 @@ class VidHidedht: VidhideExtractor() {
     override var mainUrl = "https://dhtpre.com"
 }
 
+class Vidhidehub : VidhideExtractor() {
+    override var mainUrl = "https://vidhidehub.com"
+}
 
 open class Ds2play : ExtractorApi() {
     override var name = "DoodStream"
@@ -44,5 +48,32 @@ open class Ds2play : ExtractorApi() {
             )
         ) // links are valid in 8h
 
+    }
+}
+
+open class Bigwarp : ExtractorApi() {
+    override val name = "Bigwarp"
+    override val mainUrl = "https://bigwarp.io"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+    ): List<ExtractorLink>? {
+        val response =app.get(url).document
+        val script = response.selectFirst("script:containsData(sources)")?.data().toString()
+        Regex("sources:\\s*\\[.file:\"(.*)\".*").find(script)?.groupValues?.get(1)?.let { link ->
+                return listOf(
+                    ExtractorLink(
+                        source = name,
+                        name = name,
+                        url = link,
+                        referer = referer ?: "$mainUrl/",
+                        quality = Qualities.P1080.value,
+                        INFER_TYPE
+                    )
+                )
+        }
+        return null
     }
 }

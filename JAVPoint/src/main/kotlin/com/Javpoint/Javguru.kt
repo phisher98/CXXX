@@ -84,12 +84,13 @@ class Javguru : MainAPI() {
              .map { it.groupValues[1] }
              .map { Base64.decode(it, Base64.DEFAULT).let(::String) }
              .toList()
-         iframeUrls.amap {
+         iframeUrls.forEach {
              Log.d("Phisher",it)
              val iframedoc=app.get(it, referer = it).document
              val olid=iframedoc.toString().substringAfter("var OLID = '").substringBefore("'")
              val newreq=iframedoc.toString().substringAfter("iframe").substringAfter("src=\"").substringBefore("'+OLID")
              val reverseid= olid.edoceD()
+             Log.d("Phisher","$newreq$reverseid")
              val location= app.get("$newreq$reverseid", referer = it, allowRedirects = false)
              val link=location.headers["location"].toString()
              Log.d("Phisher",link)

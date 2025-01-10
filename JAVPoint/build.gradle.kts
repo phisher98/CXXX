@@ -5,9 +5,9 @@ version = 8
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "5+ Jav sources in one"
+    description = "JavGuru,Javgg,Javdoe,Javangel,JavEnglish"
     language    = "en"
-    authors = listOf("HindiProviders")
+    authors = listOf("Phisher98")
 
     /**
     * Status int as the following:
@@ -22,6 +22,6 @@ cloudstream {
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("NSFW")
-    iconUrl = "https://www.google.com/s2/favicons?domain=uncutmaza.cc&sz=%size%"
+    iconUrl = "https://www.google.com/s2/favicons?domain=jav.guru&sz=%size%"
 
 }

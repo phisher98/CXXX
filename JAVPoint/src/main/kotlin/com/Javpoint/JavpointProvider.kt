@@ -32,5 +32,6 @@ class JavpointProvider: Plugin() {
         registerExtractorAPI(Ds2Play())
         registerExtractorAPI(Streamwish())
         registerExtractorAPI(Vidhidepro())
+        registerExtractorAPI(Streamhihi())
     }
 }

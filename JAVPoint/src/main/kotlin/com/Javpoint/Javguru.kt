@@ -90,10 +90,8 @@ class Javguru : MainAPI() {
              val olid=iframedoc.toString().substringAfter("var OLID = '").substringBefore("'")
              val newreq=iframedoc.toString().substringAfter("iframe").substringAfter("src=\"").substringBefore("'+OLID")
              val reverseid= olid.edoceD()
-             Log.d("Phisher","$newreq$reverseid")
              val location= app.get("$newreq$reverseid", referer = it, allowRedirects = false)
              val link=location.headers["location"].toString()
-             Log.d("Phisher",link)
              if (link.contains(".m3u"))
              {
                  callback.invoke(

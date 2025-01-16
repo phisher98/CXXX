@@ -1,6 +1,7 @@
 package com.Javpoint
 
 import android.util.Base64
+import com.lagradost.api.Log
 //import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
@@ -83,10 +84,11 @@ class Javguru : MainAPI() {
              .map { it.groupValues[1] }
              .map { Base64.decode(it, Base64.DEFAULT).let(::String) }
              .toList()
-         iframeUrls.map {
+         iframeUrls.forEach {
+             Log.d("Phisher",it)
              val iframedoc=app.get(it, referer = it).document
              val olid=iframedoc.toString().substringAfter("var OLID = '").substringBefore("'")
-             val newreq=iframedoc.toString().substringAfterLast("src=\"").substringBefore("'+OLID")
+             val newreq=iframedoc.toString().substringAfter("iframe").substringAfter("src=\"").substringBefore("'+OLID")
              val reverseid= olid.edoceD()
              val location= app.get("$newreq$reverseid", referer = it, allowRedirects = false)
              val link=location.headers["location"].toString()

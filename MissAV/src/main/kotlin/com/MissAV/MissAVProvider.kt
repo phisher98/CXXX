@@ -1,13 +1,11 @@
 package com.MissAv
 
-import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import okhttp3.FormBody
 
 class MissAVProvider : MainAPI() {
-    override var mainUrl              = "https://missav.com"
+    override var mainUrl              = "https://missav.ws"
     override var name                 = "MissAV"
     override val hasMainPage          = true
     override var lang                 = "en"
@@ -92,7 +90,6 @@ class MissAVProvider : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val doc = app.get(data).document
         with(app.get(data)) {
             getAndUnpack(this.text).let { unpackedText ->
                 val linkList = unpackedText.split(";")

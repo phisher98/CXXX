@@ -14,5 +14,7 @@ class TollyProProvider: Plugin() {
         registerExtractorAPI(VidHidePro3())
         registerExtractorAPI(VidHideplus())
         registerExtractorAPI(VidHidedht())
+        registerExtractorAPI(Vidhidehub())
+        registerExtractorAPI(Bigwarp())
     }
 }

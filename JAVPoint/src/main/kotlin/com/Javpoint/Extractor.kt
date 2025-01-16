@@ -74,6 +74,11 @@ open class javclan : ExtractorApi() {
     }
 }
 
+class Streamhihi : Streamwish() {
+    override var name = "Streamhihi"
+    override var mainUrl = "https://streamhihi.com"
+}
+
 open class Streamwish : ExtractorApi() {
     override var name = "Streamwish"
     override var mainUrl = "https://streamwish.to"

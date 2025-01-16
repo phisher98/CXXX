@@ -1,5 +1,6 @@
 package com.TollyPro
 
+import android.annotation.SuppressLint
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.SubtitleFile
@@ -12,21 +13,33 @@ import org.jsoup.Jsoup
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.nodes.Element
+import java.time.Year
 
 class TollyPro : MainAPI() {
 
-    override var mainUrl = "https://tellyhd.icu"
+    override var mainUrl = "https://tellyhd.ink"
     override var name = "TellyHD"
     override val hasMainPage= true
     override var lang= "hi"
     override val supportedTypes= setOf(TvType.NSFW)
     override val vpnStatus= VPNStatus.MightBeNeeded
     val directUrl =""
+    @SuppressLint("NewApi")
     override val mainPage = mainPageOf(
-        "trending" to "Trending",
+        "release/${Year.now().value}" to "Latest",
         "movies" to "Movies",
-        "genre/18" to "18+",
-        "genre/jav" to "JAV"
+        "genre/indian" to "Indian",
+        "genre/usa" to "USA",
+        "genre/jav" to "JAV",
+        "genre/uncensored" to "Uncensored",
+        "genre/bindastimes" to "Bindastimes",
+        "genre/hunters" to "Hunters",
+        "genre/neonx" to "Neonx",
+        "genre/philippine" to "Philippine",
+        "genre/primeplay" to "Primeplay",
+        "genre/primeshots" to "Primeshots",
+        "genre/rabbit" to "Rabbit",
+        "genre/vivamax" to "Vivamax",
     )
 
     override suspend fun getMainPage(
@@ -85,7 +98,7 @@ class TollyPro : MainAPI() {
             val title =
                 it.selectFirst("div.title > a")!!.text().replace(Regex("\\(\\d{4}\\)"), "").trim()
             val href = getProperLink(it.selectFirst("div.title > a")!!.attr("href"))
-            val posterUrl = it.selectFirst("img")!!.attr("src").toString()
+            val posterUrl = it.selectFirst("img")!!.attr("src")
             newMovieSearchResponse(title, href, TvType.TvSeries) {
                 this.posterUrl = posterUrl
             }
@@ -143,7 +156,7 @@ class TollyPro : MainAPI() {
         return true
         }
 
-    private fun Element.getImageAttr(): String? {
+    private fun Element.getImageAttr(): String {
         return when {
             this.hasAttr("data-src") -> this.attr("abs:data-src")
             this.hasAttr("data-lazy-src") -> this.attr("abs:data-lazy-src")

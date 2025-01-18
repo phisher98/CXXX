@@ -108,7 +108,6 @@ class TollyPro : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val request = app.get(url)
         val document = request.document
-        val directUrl = getBaseUrl(request.url)
         val title =
             document.selectFirst("div.data > h1")?.text()?.trim().toString()
         var posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
@@ -143,7 +142,7 @@ class TollyPro : MainAPI() {
     ): Boolean {
             val loadData = tryParseJson<LinkData>(data)
             val source = app.post(
-                url = "$directUrl/wp-admin/admin-ajax.php", data = mapOf(
+                url = "$mainUrl/wp-admin/admin-ajax.php", data = mapOf(
                     "action" to "doo_player_ajax", "post" to "${loadData?.post}", "nume" to "${loadData?.nume}", "type" to "${loadData?.type}"
                 ), referer = data, headers = mapOf("Accept" to "*/*", "X-Requested-With" to "XMLHttpRequest"
                 )).parsed<ResponseHash>().embed_url.getIframe()

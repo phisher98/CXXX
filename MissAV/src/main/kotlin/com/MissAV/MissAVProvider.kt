@@ -20,7 +20,9 @@ class MissAVProvider : MainAPI() {
             "/dm561/en/uncensored-leak" to "Uncensored Leak",
             "/dm242/en/today-hot" to "Most Viewed Today",
             "/dm168/en/weekly-hot" to "Most Viewed by Week",
-            "/dm207/en/monthly-hot" to "Most Viewed by Month"
+            "/dm207/en/monthly-hot" to "Most Viewed by Month",
+            "/dm96/en/fc2" to "Uncensored FC2 AV",
+            "/dm34/en/madou" to "Madou AV"
         )
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
             val document = app.get("$mainUrl${request.data}?page=$page").document
@@ -31,7 +33,7 @@ class MissAVProvider : MainAPI() {
 
     private fun Element.toSearchResult(): SearchResponse {
         val status = this.select(".bg-blue-800").text()
-        val title = if(!status.isNullOrBlank()){"[$status] "+ this.select(".text-secondary").text()} else {this.select(".text-secondary").text()}
+        val title = if(status.isNotBlank()){"[$status] "+ this.select(".text-secondary").text()} else {this.select(".text-secondary").text()}
         val href = this.select(".text-secondary").attr("href")
         val posterUrl = this.selectFirst(".w-full")?.attr("data-src")
         return newMovieSearchResponse(title, href, TvType.NSFW) {
@@ -49,7 +51,7 @@ class MissAVProvider : MainAPI() {
 
             val results = document.select(".thumbnail").mapNotNull { it.toSearchResult() }
 
-            if(!results.isNullOrEmpty())
+            if(results.isNotEmpty())
             {
                 for (result in results)
                 {

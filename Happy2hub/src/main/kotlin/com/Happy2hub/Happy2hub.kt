@@ -1,5 +1,6 @@
 package com.Happy2hub
 
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
@@ -13,7 +14,7 @@ class Happy2hub : MainAPI() {
     override val vpnStatus            = VPNStatus.MightBeNeeded
 
     override val mainPage = mainPageOf(
-            "tag/ullu-watch-online" to "Ullu",
+            "ullu-a/" to "Ullu",
             "tag/primeplay-watch-online" to "Primeplay",
             "tag/altt-watch-online" to "Altt",
             "tag/bigshots-ott-watch-online" to "Bigshots",
@@ -82,6 +83,8 @@ class Happy2hub : MainAPI() {
         val poster = fixUrlNull(document.selectFirst("[property='og:image']")?.attr("content"))
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
         val episodes = mutableListOf<Episode>()
+        Log.d("Phisher",url)
+        Log.d("Phisher",poster.toString())
 
         // Retrieve the first download link
         val href = document.select("div.entry-content.clearfix p a").attr("href")

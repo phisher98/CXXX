@@ -17,7 +17,7 @@ import java.time.Year
 
 class TollyPro : MainAPI() {
 
-    override var mainUrl = "https://tellyhd.ink"
+    override var mainUrl = "https://tellyhd.tv"
     override var name = "TellyHD"
     override val hasMainPage= true
     override var lang= "hi"

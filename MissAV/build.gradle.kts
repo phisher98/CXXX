@@ -1,4 +1,4 @@
-version = 4
+version = 5
 
 cloudstream {
     authors     = listOf("luck731")
@@ -14,5 +14,5 @@ cloudstream {
     **/
     status  = 1 // will be 3 if unspecified
     tvTypes = listOf("NSFW")
-    iconUrl = "https://missav.com/missav/logo-square.png"
+    iconUrl = "https://missav.pw/missav/logo-square.png"
 }

@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
 class MissAVProvider : MainAPI() {
-    override var mainUrl              = "https://missav.ws"
+    override var mainUrl              = "https://missav.pw"
     override var name                 = "MissAV"
     override val hasMainPage          = true
     override var lang                 = "en"

@@ -97,8 +97,8 @@ class JAVHDProvider : MainAPI() {
         val doc = app.get(data).document
         val episodeList = doc.select(".button_style .button_choice_server")
         episodeList.forEach { item->
-            var link = "playEmbed\\('(.*)'\\)".toRegex().find(item.attr("onclick"))?.groups?.get(1)?.value.toString()
-            loadExtractor(link,subtitleCallback,callback)
+            var link = "atob\\('(.*)'\\)".toRegex().find(item.attr("onclick"))?.groups?.get(1)?.value.toString()
+            loadExtractor(base64Decode(link),subtitleCallback,callback)
         }
 
 

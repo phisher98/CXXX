@@ -128,8 +128,9 @@ class Javgg : MainAPI() {
                         source = "$name $index",
                         name = "$name $index",
                         url = it,
-                        referer = data,
-                        quality = Qualities.Unknown.value
+                        referer = "",
+                        quality = Qualities.Unknown.value,
+                        isM3u8 = true
                     )
                 )
             }

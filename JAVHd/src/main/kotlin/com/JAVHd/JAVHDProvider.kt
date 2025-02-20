@@ -15,7 +15,7 @@ class JAVHDProvider : MainAPI() {
     override val hasChromecastSupport = true
     override val supportedTypes       = setOf(TvType.NSFW)
     override val vpnStatus            = VPNStatus.MightBeNeeded
-
+    val subtitleCatUrl = "https://www.subtitlecat.com"
     override val mainPage = mainPageOf(
             "/releaseday/" to "Release Day",
             "/recent/" to "Latest Upadates",
@@ -82,7 +82,7 @@ class JAVHDProvider : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
-        val title = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString().replace("| PornHoarder.tv","")
+        val title = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString()
         val poster = fixUrlNull(document.selectFirst("[property='og:image']")?.attr("content"))
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
     
@@ -100,6 +100,46 @@ class JAVHDProvider : MainAPI() {
             var link = "atob\\('(.*)'\\)".toRegex().find(item.attr("onclick"))?.groups?.get(1)?.value.toString()
             loadExtractor(base64Decode(link),subtitleCallback,callback)
         }
+
+        try {
+            val title = doc.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString()
+            val javCode = "([a-zA-Z]+-\\d+)".toRegex().find(title)?.groups?.get(1)?.value
+            if(!javCode.isNullOrEmpty())
+            {
+                val query = "$subtitleCatUrl/index.php?search=$javCode"
+                val subDoc = app.get(query, timeout = 15).document
+                val subList = subDoc.select("td a")
+                for(item in subList)
+                {
+                    if(item.text().contains(javCode))
+                    {
+                        val fullUrl = "$subtitleCatUrl/${item.attr("href")}"
+                        val pDoc = app.get(fullUrl, timeout = 10).document
+                        val sList = pDoc.select(".col-md-6.col-lg-4")
+                        for(item in sList)
+                        {
+                            try {
+                                val language = item.select(".sub-single span:nth-child(2)").text()
+                                val text = item.select(".sub-single span:nth-child(3) a")
+                                if(text != null && text.size > 0 && text[0].text() == "Download")
+                                {
+                                    val url = "$subtitleCatUrl${text[0].attr("href")}"
+                                    subtitleCallback.invoke(
+                                        SubtitleFile(
+                                            language.replace("\uD83D\uDC4D \uD83D\uDC4E",""),  // Use label for the name
+                                            url     // Use extracted URL
+                                        )
+                                    )
+                                }
+                            } catch (e: Exception) { }
+                        }
+
+                    }
+                }
+
+            }
+        } catch (e: Exception) { }
+
 
 
         return true

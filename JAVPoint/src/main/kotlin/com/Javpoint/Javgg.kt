@@ -1,8 +1,5 @@
 package com.Javpoint
 
-//import android.util.Log
-import android.util.Log
-import com.fasterxml.jackson.annotation.JsonProperty
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -112,29 +109,33 @@ class Javgg : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data).document
-        document.select("ul#playeroptionsul > li").map {
-            Triple(
-                it.attr("data-type"),
-                it.attr("data-post"),
-                it.attr("data-nume")
-            )
-        }.apmap { (type, post, nume) ->
-            val source = app.get(
-                url = "$mainUrl/wp-json/dooplayer/v2/$post/$type/$nume",
-                referer = data,
-                headers = mapOf("X-Requested-With" to "XMLHttpRequest")
-            ).parsedSafe<ResponseAPI>()?.embedUrl
-            if (source != null) {
-                Log.d("TEst",source)
-                loadExtractor(source,subtitleCallback, callback)
+        document.select("div.pframe iframe").forEachIndexed { index, iframe ->
+            val src = iframe.attr("src")
+            val link = if ("javggvideo.xyz" in src) {
+                app.get(src).document.selectFirst("script:containsData(urlPlay)")?.data()
+                    ?.let { Regex("urlPlay\\s*=\\s*'(.*?)'").find(it)?.groupValues?.getOrNull(1) }
+            } else {
+                app.get(src).document
+                    .selectFirst("script:containsData(p,a,c,k,e,d)")?.data()
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { JsUnpacker(it).unpack() }
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { Regex("file:\"(.*?)\"").find(it)?.groupValues?.getOrNull(1) }
+            }
+            link?.let {
+                callback.invoke(
+                    ExtractorLink(
+                        source = "$name $index",
+                        name = "$name $index",
+                        url = it,
+                        referer = "",
+                        quality = Qualities.Unknown.value,
+                        isM3u8 = true
+                    )
+                )
             }
         }
+
         return true
     }
-
-        data class ResponseAPI(
-            @JsonProperty("embed_url")
-            val embedUrl: String,
-            val type: String,
-        )
 }

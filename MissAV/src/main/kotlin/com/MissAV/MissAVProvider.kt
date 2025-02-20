@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
 class MissAVProvider : MainAPI() {
-    override var mainUrl              = "https://missav.pw"
+    override var mainUrl              = "https://missav.ws"
     override var name                 = "MissAV"
     override val hasMainPage          = true
     override var lang                 = "en"
@@ -15,14 +15,15 @@ class MissAVProvider : MainAPI() {
     override val vpnStatus            = VPNStatus.MightBeNeeded
 
     override val mainPage = mainPageOf(
-            "/dm513/en/new" to "Recent Update",
-            "/dm509/en/release" to "New Releases",
-            "/dm561/en/uncensored-leak" to "Uncensored Leak",
-            "/dm242/en/today-hot" to "Most Viewed Today",
-            "/dm168/en/weekly-hot" to "Most Viewed by Week",
-            "/dm207/en/monthly-hot" to "Most Viewed by Month",
-            "/dm96/en/fc2" to "Uncensored FC2 AV",
-            "/dm34/en/madou" to "Madou AV"
+            "/dm514/en/new" to "Recent Update",
+            "/dm588/en/release" to "New Release",
+            "/dm291/en/today-hot" to "Most Viewed Today",
+            "/dm169/en/weekly-hot" to "Most Viewed by Week",
+            "/dm256/en/monthly-hot" to "Most Viewed by Month",
+            "/dm97/en/fc2" to "Uncensored FC2 AV",
+            "/dm34/en/madou" to "Madou AV",
+            "/dm620/en/uncensored-leak" to "Uncensored Leak",
+            "/en/klive" to "Korean Live AV"
         )
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
             val document = app.get("$mainUrl${request.data}?page=$page").document

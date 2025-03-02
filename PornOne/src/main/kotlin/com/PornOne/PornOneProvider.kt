@@ -53,13 +53,14 @@ class PornOneProvider : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title = this.select(".imgvideo.w-full").attr("alt")
+        val title = this.select(".videotitle").text()
         val href =  this.attr("href")
-        var posterUrl = this.select(".imgvideo.w-full").attr("data-src")
-        if(posterUrl.isNullOrBlank())
-        {
-            posterUrl = this.select(".imgvideo.w-full").attr("src")
+        var posterUrl = this.select(".imgvideo").attr("data-src")
+
+        if (posterUrl.isEmpty()) {
+            posterUrl = this.select(".imgvideo").attr("src")
         }
+
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }

@@ -101,8 +101,12 @@ class actionviewphotography : MainAPI() {
                         source = name,
                         name = name,
                         url = httpsify( source.getString("file")),
-                        referer = "",
-                        quality = getQualityFromName(source.getString("label"))
+                        referer = mainUrl,
+                        quality = getQualityFromName(source.getString("label")),
+                        isM3u8 = false,
+                        headers = mapOf(
+                            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+                        )
                     )
                 )
             }

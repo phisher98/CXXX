@@ -7,17 +7,18 @@ import com.lagradost.cloudstream3.utils.M3u8Helper
 
 open class Xtremestream : ExtractorApi() {
     override var name = "Xtremestream"
-    override var mainUrl = "xtremestream.co"
+    override var mainUrl = "https://pervl4.xtremestream.xyz"
     override val requiresReferer = false
 
-    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
+    override suspend fun getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit){
+
         val response = app.get(
-            url, referer = "https://${url.substringAfter("//").substringBefore("/")}/",
+            url, referer = referer,
         )
+
         val playerScript =
             response.document.selectXpath("//script[contains(text(),'var video_id')]")
                 .html()
-
         val sources = mutableListOf<ExtractorLink>()
         if (playerScript.isNotBlank()) {
             val videoId = playerScript.substringAfter("var video_id = `").substringBefore("`;")
@@ -34,6 +35,9 @@ open class Xtremestream : ExtractorApi() {
                 }
             }
         }
-        return sources
+        sources.forEach { source ->
+            callback.invoke(source)
+        }
+
     }
 }

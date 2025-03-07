@@ -10,5 +10,8 @@ class OnlyjerkProvider: Plugin() {
         registerMainAPI(Onlyjerk())
         registerExtractorAPI(Dooodster())
         registerExtractorAPI(Bigwarp())
+        registerExtractorAPI(Listeamed())
+        registerExtractorAPI(Beamed())
+        registerExtractorAPI(Bgwp())
     }
 }

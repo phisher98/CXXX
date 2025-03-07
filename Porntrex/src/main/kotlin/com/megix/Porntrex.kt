@@ -168,7 +168,7 @@ class Porntrex : MainAPI() {
                             name,
                             name,
                             fixUrl(url),
-                            referer = "",
+                            referer = data,
                             quality =
                             Regex("(\\d+.)").find(quality)?.groupValues?.get(1)
                                     .let { getQualityFromName(it) }

@@ -61,7 +61,7 @@ class JavEnglish : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
 
-        for (i in 1..2) {
+        for (i in 1..5) {
             val document = app.get("${mainUrl}/page/$i/?s=$query").document
 
             val results = document.select("article")
@@ -103,7 +103,10 @@ class JavEnglish : MainAPI() {
             this.posterUrl = poster
             this.plot = description
             this.recommendations = recommendations
-            posterHeaders = mapOf("Referer" to mainUrl)
+            posterHeaders = mapOf(
+                "Referer" to mainUrl,
+                "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+            )
         }
     }
 

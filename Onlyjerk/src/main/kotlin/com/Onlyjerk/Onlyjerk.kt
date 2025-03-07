@@ -27,7 +27,7 @@ class Onlyjerk : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get("$mainUrl${request.data}/page/$page/").document
-        val home     = document.select("div.td-cpt-post").mapNotNull { it.toSearchResult() }
+        val home     = document.select("div.tdb-block-inner > div.td-cpt-post").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
                 list    = HomePageList(
@@ -54,7 +54,7 @@ class Onlyjerk : MainAPI() {
 
         for (i in 1..5) {
             val document = app.get("$mainUrl/page/$i/?s=$query").document
-            val results = document.select("div.td-cpt-post").mapNotNull { it.toSearchResult() }
+            val results = document.select("div.tdb-block-inner > div.td-cpt-post").mapNotNull { it.toSearchResult() }
 
             if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)
@@ -84,10 +84,19 @@ class Onlyjerk : MainAPI() {
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        document.select(".tabcontent > iframe").map {
+        document.select(".tabcontent > iframe").amap {
             loadExtractor(
                 it.attr("data-litespeed-src"),
-                referer = "",
+                referer = data,
+                subtitleCallback,
+                callback
+            )
+        }
+
+        document.select("div.wp-block-button > a").amap {
+            loadExtractor(
+                it.attr("href"),
+                referer = data,
                 subtitleCallback,
                 callback
             )

@@ -80,8 +80,7 @@ class YesPornPlease : MainAPI() {
         ): Boolean {
 
         val document = app.get(data).document
-        val iframe = document.select(".wp-video iframe").attr("data-litespeed-src")
-        val source = app.get(iframe).document.select("#video > a").attr("href")
+        val source = document.select("source").attr("src")
         callback.invoke(
             ExtractorLink(
                 this.name,

@@ -22,7 +22,7 @@ import org.jsoup.nodes.Element
 
 class Perverzija : MainAPI() {
     override var name = "Perverzija"
-    override var mainUrl = "https://tube.perverzija.com/"
+    override var mainUrl = "https://tube.perverzija.com"
     override val supportedTypes = setOf(TvType.NSFW)
 
     override val hasDownloadSupport = true
@@ -32,11 +32,16 @@ class Perverzija : MainAPI() {
 
     override val mainPage = mainPageOf(
         "$mainUrl/page/%d/" to "Home",
-        "$mainUrl/studio/page/%d/?orderby=view" to "Most Viewed",
-        "$mainUrl/studio/page/%d/?orderby=like" to "Most Liked",
         "$mainUrl/featured-scenes/page/%d/?orderby=date" to "Featured",
-        "$mainUrl/featured-scenes/page/%d/?orderby=view" to "Featured Most Viewed",
-        "$mainUrl/featured-scenes/page/%d/?orderby=like" to "Featured Most Liked",
+        "$mainUrl/studio/onlyfans/page/%d/" to "Onlyfans",
+        "$mainUrl/studio/vxn/page/%d/" to "Vxn",
+        "$mainUrl/studio/brazzers/page/%d/" to "Brazzers",
+        "$mainUrl/studio/private/page/%d/" to "Private",
+        "$mainUrl/studio/nubiles/page/%d/" to "Nubiles",
+        "$mainUrl/studio/realitykings/page/%d/" to "Reality Kings",
+        "$mainUrl/studio/bangbros/page/%d/" to "Bangbros",
+        "$mainUrl/studio/naughtyamerica/page/%d/" to "Naughty America",
+        "$mainUrl/studio/vxn/blacked/page/%d/" to "Blacked",
     )
 
     override suspend fun getMainPage(

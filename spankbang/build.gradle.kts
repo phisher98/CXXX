@@ -1,7 +1,7 @@
-version = 8
+version = 9
 
 cloudstream {
-    authors     = listOf("HindiProvider")
+    authors     = listOf("Phisher98")
     language    = "en"
     description = "Spankbang"
 

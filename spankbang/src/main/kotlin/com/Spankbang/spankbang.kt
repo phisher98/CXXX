@@ -5,7 +5,7 @@ import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
-class spankbang : MainAPI() {
+class Spankbang : MainAPI() {
     override var mainUrl              = "https://spankbang.com"
     override var name                 = "Spankbang"
     override val hasMainPage          = true
@@ -30,7 +30,7 @@ class spankbang : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data + page).document      
-        val home     = document.select("div.video-list-with-ads > div.video-item").mapNotNull { it.toSearchResult() }
+        val home     = document.select("div.video-item").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
             list    = HomePageList(
@@ -43,7 +43,7 @@ class spankbang : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title     = fixTitle(this.select("a.thumb > picture > img").attr("alt")).trim().toString()
+        val title     = fixTitle(this.select("a.thumb > picture > img").attr("alt")).trim()
         val href      = fixUrl(this.select("a.thumb").attr("href"))
         val posterUrl = fixUrlNull(this.select("a.thumb > picture > img").attr("data-src"))
         Log.d("title","Title check")
@@ -59,7 +59,7 @@ class spankbang : MainAPI() {
         for (i in 1..5) {
             val document = app.get("${mainUrl}/s/$query/$i/?o=all").document
 
-            val results = document.select("div.video-list-with-ads > div.video-item").mapNotNull { it.toSearchResult() }
+            val results = document.select("div.video-item").mapNotNull { it.toSearchResult() }
 
             if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)

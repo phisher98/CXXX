@@ -7,6 +7,6 @@ import android.content.Context
 @CloudstreamPlugin
 class spankbangProvider: Plugin() {
     override fun load(context: Context) {
-        registerMainAPI(spankbang())
+        registerMainAPI(Spankbang())
     }
 }

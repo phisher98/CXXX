@@ -25,9 +25,7 @@ class Eporner : MainAPI() {
             "cat/japanese" to "Japanese",
             "cat/hd-1080p" to "1080 Porn",
             "cat/4k-porn" to "4K Porn",
-            "channel/perved-family" to "Perved Family",
             "recommendations" to "Recommendation Videos",
-
         )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -113,7 +111,7 @@ class Eporner : MainAPI() {
                     source = name,
                     name = name,
                     url = src,
-                    type = ExtractorLinkType.M3U8
+                    type = INFER_TYPE
                 ) {
                     this.referer = ""
                     this.quality = getIndexQuality(labelShort)

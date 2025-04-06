@@ -23,14 +23,15 @@ open class Stbturbo : ExtractorApi() {
             this.document.let { document ->
                 val finalLink = document.select("#video_player").attr("data-hash")
                 return listOf(
-                    ExtractorLink(
-                        name,
-                        name,
-                        httpsify(finalLink),
-                        url,
-                        Qualities.Unknown.value,
-                        isM3u8 = true
-                    )
+                    newExtractorLink(
+                        source = name,
+                        name = name,
+                        url = httpsify(finalLink),
+                        ExtractorLinkType.M3U8
+                    ) {
+                        this.referer = url
+                        this.quality = Qualities.Unknown.value
+                    }
                 )
             }
         }

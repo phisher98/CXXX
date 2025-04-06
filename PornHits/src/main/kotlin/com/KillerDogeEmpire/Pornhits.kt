@@ -17,7 +17,9 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.json.JSONObject
 import org.jsoup.nodes.Element
 
@@ -155,14 +157,16 @@ class Pornhits : MainAPI() {
                 quality = Qualities.Unknown.value
             }
             externalLinkList.add(
-                ExtractorLink(
-                    this.name,
-                    this.name,
-                    fixUrl(url),
-                    referer = mainUrl,
-                    quality = quality,
-                    isM3u8 = isM3u8
-                )
+                newExtractorLink(
+                    source = this.name,
+                    name = this.name,
+                    url = fixUrl(url),
+                    ExtractorLinkType.M3U8
+                ) {
+                    this.referer = mainUrl
+                    this.quality = quality
+                }
+
             )
             if (isVHQ) break
         }

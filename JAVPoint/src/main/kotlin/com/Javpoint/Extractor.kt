@@ -8,10 +8,12 @@ import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 open class DoodJav : ExtractorApi() {
     override var name = "DoodStream"
@@ -25,14 +27,14 @@ open class DoodJav : ExtractorApi() {
         val trueUrl = app.get(md5, referer = url).text + "zUEJeL3mUN?token=" + md5.substringAfterLast("/")   //direct link to extract  (zUEJeL3mUN is random)
         val quality = Regex("\\d{3,4}p").find(response0.substringAfter("<title>").substringBefore("</title>"))?.groupValues?.get(0)
         return listOf(
-            ExtractorLink(
-                this.name,
-                this.name,
-                trueUrl,
-                mainUrl,
-                getQualityFromName(quality),
-                false
-            )
+            newExtractorLink(
+                source = this.name,
+                name = this.name,
+                url = trueUrl
+            ) {
+                this.referer = mainUrl
+                this.quality = getQualityFromName(quality)
+            }
         ) // links are valid in 8h
 
     }
@@ -58,15 +60,16 @@ open class javclan : ExtractorApi() {
             )
             Regex("file:\"(.*?)\"").find(script)?.groupValues?.get(1)?.let { link ->
                 return listOf(
-                    ExtractorLink(
-                        this.name,
-                        this.name,
-                        link,
-                        referer ?: "",
-                        getQualityFromName(""),
-                        type = INFER_TYPE,
-                        headers
-                    )
+                    newExtractorLink(
+                        source = this.name,
+                        name = this.name,
+                        url = link,
+                        INFER_TYPE
+                    ) {
+                        this.referer = referer ?: ""
+                        this.quality = getQualityFromName("")
+                        this.headers = headers
+                    }
                 )
             }
         }
@@ -101,15 +104,16 @@ open class Streamwish : ExtractorApi() {
             )
             Regex("file:\"(.*?)\"").find(script)?.groupValues?.get(1)?.let { link ->
                 return listOf(
-                    ExtractorLink(
-                        this.name,
-                        this.name,
-                        link,
-                        referer ?: "",
-                        getQualityFromName(""),
-                        type = INFER_TYPE,
-                        headers
-                    )
+                    newExtractorLink(
+                        source = this.name,
+                        name = this.name,
+                        url = link,
+                        INFER_TYPE
+                    ) {
+                        this.referer = referer ?: ""
+                        this.quality = getQualityFromName("")
+                        this.headers = headers
+                    }
                 )
             }
         }
@@ -128,14 +132,15 @@ open class Maxstream : ExtractorApi() {
         JsUnpacker(extractedpack).unpack()?.let { unPacked ->
             Regex("file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)?.let { link ->
                 return listOf(
-                    ExtractorLink(
-                        this.name,
-                        this.name,
-                        link,
-                        referer ?: "",
-                        Qualities.Unknown.value,
-                        type = INFER_TYPE
-                    )
+                    newExtractorLink(
+                        source = this.name,
+                        name = this.name,
+                        url = link,
+                        INFER_TYPE
+                    ) {
+                        this.referer = referer ?: ""
+                        this.quality = Qualities.Unknown.value
+                    }
                 )
             }
         }
@@ -159,14 +164,15 @@ open class Vidhidepro : ExtractorApi() {
         Regex("sources:.\\[.file:\"(.*)\".*").find(script)?.groupValues?.get(1)?.let { link ->
             if (link.contains("m3u8"))
                 return listOf(
-                    ExtractorLink(
+                    newExtractorLink(
                         source = name,
                         name = name,
                         url = link,
-                        referer = referer ?: "$mainUrl/",
-                        quality = Qualities.Unknown.value,
-                        isM3u8 = true
-                    )
+                        ExtractorLinkType.M3U8
+                    ) {
+                        this.referer = referer ?: "$mainUrl/"
+                        this.quality = Qualities.Unknown.value
+                    }
                 )
         }
         return null
@@ -191,14 +197,15 @@ open class Javggvideo : ExtractorApi() {
         val response =app.get(url).text
         val link = response.substringAfter("var urlPlay = '").substringBefore("';")
                 return listOf(
-                    ExtractorLink(
+                    newExtractorLink(
                         source = name,
                         name = name,
                         url = link,
-                        referer = referer ?: "$mainUrl/",
-                        quality = Qualities.Unknown.value,
-                        type = INFER_TYPE
-                    )
+                        INFER_TYPE
+                    ) {
+                        this.referer = referer ?: "$mainUrl/"
+                        this.quality = Qualities.Unknown.value
+                    }
                 )
     }
 }

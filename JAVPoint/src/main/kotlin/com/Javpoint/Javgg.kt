@@ -124,14 +124,15 @@ class Javgg : MainAPI() {
             }
             link?.let {
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         source = "$name $index",
                         name = "$name $index",
                         url = it,
-                        referer = "",
-                        quality = Qualities.Unknown.value,
-                        isM3u8 = true
-                    )
+                        ExtractorLinkType.M3U8
+                    ) {
+                        this.referer = ""
+                        this.quality = Qualities.Unknown.value
+                    }
                 )
             }
         }

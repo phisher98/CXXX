@@ -91,17 +91,18 @@ class NoodleMagazineProvider : MainAPI() { // all providers must be an instance 
             for (i in 0 until sources.length()) {
                 val source = sources.getJSONObject(i)
                 extlinkList.add(
-                    ExtractorLink(
+                    newExtractorLink(
                         source = name,
                         name = name,
                         url = source.getString("file"),
-                        referer = mainUrl,
-                        quality = getQualityFromName(source.getString("label")),
-                        isM3u8 = false,
-                        headers = mapOf(
+                        ExtractorLinkType.M3U8
+                    ) {
+                        this.referer = mainUrl
+                        this.quality = getQualityFromName(source.getString("label"))
+                        this.headers = mapOf(
                             "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
                         )
-                    )
+                    }
                 )
             }
             extlinkList.forEach(callback)

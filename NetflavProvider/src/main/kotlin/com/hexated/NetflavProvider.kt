@@ -122,14 +122,15 @@ class NetflavProvider : MainAPI() {
         val response = document.select("script").find { it.data().contains("eval(function(p,a,c,k,e,d)") }?.data()?.let { getAndUnpack(it) } ?: ""
         val link = response.substringAfter("[{file:\"").substringBefore("\"")
         callback.invoke(
-            ExtractorLink(
-                name,
-                name,
-                link,
-                referer = "$data/",
-                quality = Qualities.Unknown.value,
-                isM3u8 = true
-            )
+            newExtractorLink(
+                source = name,
+                name = name,
+                url = link,
+                ExtractorLinkType.M3U8
+            ) {
+                this.referer = "$data/"
+                this.quality = Qualities.Unknown.value
+            }
         )
 
         return true

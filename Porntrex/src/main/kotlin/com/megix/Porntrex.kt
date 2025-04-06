@@ -18,6 +18,7 @@ import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.json.JSONObject
 import org.jsoup.internal.StringUtil
 import org.jsoup.nodes.Element
@@ -164,15 +165,15 @@ class Porntrex : MainAPI() {
                 continue
             }
             extlinkList.add(
-                    ExtractorLink(
-                            name,
-                            name,
-                            fixUrl(url),
-                            referer = data,
-                            quality =
-                            Regex("(\\d+.)").find(quality)?.groupValues?.get(1)
-                                    .let { getQualityFromName(it) }
-                    )
+                newExtractorLink(
+                    source = name,
+                    name = name,
+                    url = fixUrl(url)
+                ) {
+                    this.referer = data
+                    this.quality = Regex("(\\d+.)").find(quality)?.groupValues?.get(1)
+                        .let { getQualityFromName(it) }
+                }
             )
         }
         extlinkList.forEach(callback)

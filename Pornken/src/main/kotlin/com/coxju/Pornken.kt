@@ -5,6 +5,7 @@ import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import okhttp3.FormBody
 
 class Porn11 : MainAPI() {
@@ -112,13 +113,14 @@ class Porn11 : MainAPI() {
             val url =it.attr("src")
             val resolution=it.attr("res")
             callback.invoke(
-                ExtractorLink(
-                    source  = this.name,
-                    name    = this.name,
-                    url     = url,
-                    referer = data,
-                    quality = getQualityFromName(resolution)
-                )
+                newExtractorLink(
+                    source = this.name,
+                    name = this.name,
+                    url = url
+                ) {
+                    this.referer = data
+                    this.quality = getQualityFromName(resolution)
+                }
             )
         }
 

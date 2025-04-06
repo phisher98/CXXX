@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 open class Mydaddy : ExtractorApi() {
     override val name = "Mydaddy"
@@ -41,13 +42,14 @@ open class Mydaddy : ExtractorApi() {
         for (quality in qualities) {
             val href="$finalurl/$quality.mp4"
             callback.invoke(
-                ExtractorLink(
-                    name,
-                    name,
-                    href,
-                    "",
-                    getQualityFromName(quality)
-                )
+                newExtractorLink(
+                    source = name,
+                    name = name,
+                    url = href
+                ) {
+                    this.referer = ""
+                    this.quality = getQualityFromName(quality)
+                }
             )
         }
     }

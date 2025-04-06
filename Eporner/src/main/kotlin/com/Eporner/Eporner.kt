@@ -109,13 +109,15 @@ class Eporner : MainAPI() {
             val src = sourceObject.getString("src")
             val labelShort = sourceObject.getString("labelShort") ?: ""
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     source = name,
                     name = name,
                     url = src,
-                    referer = "",
-                    getIndexQuality(labelShort)
-                )
+                    type = ExtractorLinkType.M3U8
+                ) {
+                    this.referer = ""
+                    this.quality = getIndexQuality(labelShort)
+                }
             )
         }
         return true

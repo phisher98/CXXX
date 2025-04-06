@@ -117,13 +117,16 @@ class FullPorner : MainAPI() {
 
         videoUrls.forEach { videoUrl ->
             extlinkList.add(
-                ExtractorLink(
-                    name,
-                    name,
-                    videoUrl,
-                    referer = "",
-                    quality = Regex("""_(1080|720|480|360)p\.mp4""").find(videoUrl)?.groupValues?.getOrNull(1)?.toIntOrNull() ?: Qualities.Unknown.value,
-                )
+                newExtractorLink(
+                    source = name,
+                    name = name,
+                    url = videoUrl,
+                ) {
+                    this.referer = ""
+                    this.quality = Regex("""_(1080|720|480|360)p\.mp4""")
+                        .find(videoUrl)?.groupValues?.getOrNull(1)?.toIntOrNull()
+                        ?: Qualities.Unknown.value
+                }
             )
         }
     }

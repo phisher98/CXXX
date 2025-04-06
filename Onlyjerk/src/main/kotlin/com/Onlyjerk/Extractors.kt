@@ -41,13 +41,14 @@ open class Bigwarp : ExtractorApi() {
 
         if (match != null) {
             callback.invoke(
-                ExtractorLink(
-                    this.name,
-                    this.name,
-                    match,
-                    "",
-                    Qualities.Unknown.value
-                )
+                newExtractorLink(
+                    source = this.name,
+                    name = this.name,
+                    url = match
+                ) {
+                    this.referer = ""
+                    this.quality = Qualities.Unknown.value
+                }
             )
         }
     }

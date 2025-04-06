@@ -99,8 +99,8 @@ class XPrimeHub : MainAPI() {
 }
 
 class VCloud : ExtractorApi() {
-    override val name: String = "V-Cloud"
-    override val mainUrl: String = "https://vcloud.lol"
+    override val name = "V-Cloud"
+    override val mainUrl = "https://vcloud.lol"
     override val requiresReferer = false
 
     override suspend fun getUrl(
@@ -109,102 +109,91 @@ class VCloud : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        var href=url
-        if (href.contains("api/index.php"))
-        {
-            href=app.get(url).document.selectFirst("div.main h4 a")?.attr("href") ?:""
+        var href = url
+        if (href.contains("api/index.php")) {
+            href = app.get(url).document.selectFirst("div.main h4 a")?.attr("href") ?: ""
         }
+
         val doc = app.get(href).document
-        val scriptTag = doc.selectFirst("script:containsData(url)")?.toString() ?:""
-        val urlValue = Regex("var url = '([^']*)'").find(scriptTag) ?. groupValues ?. get(1) ?: ""
+        val scriptTag = doc.selectFirst("script:containsData(url)")?.toString() ?: ""
+        val urlValue = Regex("var url = '([^']*)'").find(scriptTag)?.groupValues?.get(1) ?: ""
+
         if (urlValue.isNotEmpty()) {
             val document = app.get(urlValue).document
             val size = document.selectFirst("i#size")?.text() ?: ""
-            val div = document.selectFirst("div.card-body")
             val header = document.selectFirst("div.card-header")?.text() ?: ""
-            val headerdetails =
-                """\.\d{3,4}p\.(.*)-[^-]*${'$'}""".toRegex().find(header)?.groupValues?.get(1)
-                    ?.trim() ?: ""
-            div?.select("h2 a.btn")?.filterNot {it.text().contains("Telegram", ignoreCase = true)}
-                ?.amap {
-                    val link = it.attr("href")
-                    if (link.contains("technorozen.workers.dev")) {
-                        @Suppress("NAME_SHADOWING") val href = app.get(link).document.selectFirst("#vd")?.attr("href") ?: ""
-                        callback.invoke(
-                            ExtractorLink(
-                                "V-Cloud 10 Gbps $headerdetails",
-                                "V-Cloud 10 Gbps $size",
-                                href,
-                                "",
-                                getIndexQuality(header),
-                            )
-                        )
-                    } else
-                        if (link.contains("pixeldra")) {
+            val headerDetails =
+                """\.\d{3,4}p\.(.*)-[^-]*${'$'}""".toRegex().find(header)?.groupValues?.get(1)?.trim() ?: ""
+
+            document.selectFirst("div.card-body")?.select("h2 a.btn")
+                ?.filterNot { it.text().contains("Telegram", ignoreCase = true) }
+                ?.forEach { linkElement ->
+                    val link = linkElement.attr("href")
+
+                    when {
+                        link.contains("technorozen.workers.dev") -> {
+                            val href = app.get(link).document.selectFirst("#vd")?.attr("href") ?: ""
                             callback.invoke(
-                                ExtractorLink(
-                                    "Pixeldrain $headerdetails",
-                                    "Pixeldrain $size",
-                                    link,
-                                    "",
-                                    getIndexQuality(header),
-                                )
+                                newExtractorLink(
+                                    source = "V-Cloud 10 Gbps",
+                                    name = "V-Cloud 10 Gbps $size",
+                                    url = href
+                                ) {
+                                    this.referer = ""
+                                    this.quality = getIndexQuality(header)
+                                }
                             )
-                        } else if (link.contains("dl.php")) {
-                            val response = app.get(link, allowRedirects = false)
-                            val downloadLink =
-                                response.headers["location"].toString().split("link=").getOrNull(1)
-                                    ?: link
-                            callback.invoke(
-                                ExtractorLink(
-                                    "V-Cloud[Download] $headerdetails",
-                                    "V-Cloud[Download] $size",
-                                    downloadLink,
-                                    "",
-                                    getIndexQuality(header),
-                                )
-                            )
-                        } else if (link.contains(".dev")) {
-                            callback.invoke(
-                                ExtractorLink(
-                                    "V-Cloud $headerdetails",
-                                    "V-Cloud $size",
-                                    link,
-                                    "",
-                                    getIndexQuality(header),
-                                )
-                            )
-                        } else if (link.contains(".hubcdn.xyz")) {
-                            callback.invoke(
-                                ExtractorLink(
-                                    "V-Cloud $headerdetails",
-                                    "V-Cloud $size",
-                                    link,
-                                    "",
-                                    getIndexQuality(header),
-                                )
-                            )
-                        } else if (link.contains(".lol")) {
-                            callback.invoke(
-                                ExtractorLink(
-                                    "V-Cloud [FSL] $headerdetails",
-                                    "V-Cloud $size",
-                                    link,
-                                    "",
-                                    getIndexQuality(header),
-                                )
-                            )
-                        } else {
-                            loadExtractor(link, subtitleCallback, callback)
                         }
+                        link.contains("pixeldra") -> {
+                            callback.invoke(
+                                newExtractorLink(
+                                    source = "Pixeldrain",
+                                    name = "Pixeldrain $size",
+                                    url = link
+                                ) {
+                                    this.referer = ""
+                                    this.quality = getIndexQuality(header)
+                                }
+                            )
+                        }
+                        link.contains("dl.php") -> {
+                            val response = app.get(link, allowRedirects = false)
+                            val downloadLink = response.headers["location"].toString().split("link=").getOrNull(1) ?: link
+                            callback.invoke(
+                                newExtractorLink(
+                                    source = "V-Cloud[Download]",
+                                    name = "V-Cloud[Download] $size",
+                                    url = downloadLink
+                                ) {
+                                    this.referer = ""
+                                    this.quality = getIndexQuality(header)
+                                }
+                            )
+                        }
+                        listOf(".dev", ".hubcdn.xyz", ".lol").any { link.contains(it) } -> {
+                            val label = when {
+                                link.contains(".lol") -> "V-Cloud [FSL]"
+                                else -> "V-Cloud"
+                            }
+                            callback.invoke(
+                                newExtractorLink(
+                                    source = label,
+                                    name = "$label $size",
+                                    url = link
+                                ) {
+                                    this.referer = ""
+                                    this.quality = getIndexQuality(header)
+                                }
+                            )
+                        }
+                        else -> loadExtractor(link, subtitleCallback, callback)
+                    }
                 }
         }
     }
-
 
     private fun getIndexQuality(str: String?): Int {
         return Regex("(\\d{3,4})[pP]").find(str ?: "")?.groupValues?.getOrNull(1)?.toIntOrNull()
             ?: Qualities.Unknown.value
     }
-
 }

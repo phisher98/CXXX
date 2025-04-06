@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 class SxyPrn : MainAPI() {
     override var mainUrl = "https://sxyprn.com"
@@ -136,13 +137,14 @@ class SxyPrn : MainAPI() {
         url = fixUrl(tmp.joinToString("/"))
 
         callback.invoke(
-            ExtractorLink(
-                this.name,
-                this.name,
-                url,
-                referer = "",
-                quality = Qualities.Unknown.value
-            )
+            newExtractorLink(
+                source = this.name,
+                name = this.name,
+                url = url
+            ) {
+                this.referer = ""
+                this.quality = Qualities.Unknown.value
+            }
         )
         return true
     }

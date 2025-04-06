@@ -80,13 +80,14 @@ class Porn4fans : MainAPI() {
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         callback.invoke(
-            ExtractorLink(
-                "Porn4fans",
-                "Porn4fans",
-                data,
-                mainUrl,
-                Qualities.Unknown.value
-            )
+            newExtractorLink(
+                source = "Porn4fans",
+                name = "Porn4fans",
+                url = data
+            ) {
+                this.referer = mainUrl
+                this.quality = Qualities.Unknown.value
+            }
         )
         return true
     }

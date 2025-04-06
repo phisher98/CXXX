@@ -99,14 +99,15 @@ class Asianpinay : MainAPI() {
                 }
             }
             callback.invoke(
-                ExtractorLink(
-                    this.name,
-                    this.name,
-                    "$m3u8url$video_id",
-                    mainUrl,
-                    Qualities.Unknown.value,
-                    isM3u8 = true,
-                )
+                newExtractorLink(
+                    source = this.name,
+                    name = this.name,
+                    url = "$m3u8url$video_id",
+                    type = ExtractorLinkType.M3U8
+                ) {
+                    this.referer = mainUrl
+                    this.quality = Qualities.Unknown.value
+                }
             )
         }
         return true

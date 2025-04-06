@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 class Vidsp : VidhideExtractor() {
     override var mainUrl = "https://vidsp.lol"
@@ -38,14 +39,14 @@ open class Ds2play : ExtractorApi() {
         val trueUrl = app.get(md5, referer = url).text + "zUEJeL3mUN?token=" + md5.substringAfterLast("/")   //direct link to extract  (zUEJeL3mUN is random)
         val quality = Regex("\\d{3,4}p").find(response0.substringAfter("<title>").substringBefore("</title>"))?.groupValues?.get(0)
         return listOf(
-            ExtractorLink(
-                this.name,
-                this.name,
-                trueUrl,
-                mainUrl,
-                getQualityFromName(quality),
-                false
-            )
+            newExtractorLink(
+                source = this.name,
+                name = this.name,
+                url = trueUrl
+            ) {
+                this.referer = mainUrl
+                this.quality = getQualityFromName(quality)
+            }
         ) // links are valid in 8h
 
     }
@@ -64,14 +65,15 @@ open class Bigwarp : ExtractorApi() {
         val script = response.selectFirst("script:containsData(sources)")?.data().toString()
         Regex("sources:\\s*\\[.file:\"(.*)\".*").find(script)?.groupValues?.get(1)?.let { link ->
                 return listOf(
-                    ExtractorLink(
+                    newExtractorLink(
                         source = name,
                         name = name,
                         url = link,
-                        referer = referer ?: "$mainUrl/",
-                        quality = Qualities.P1080.value,
                         INFER_TYPE
-                    )
+                    ) {
+                        this.referer = referer ?: "$mainUrl/"
+                        this.quality = Qualities.P1080.value
+                    }
                 )
         }
         return null

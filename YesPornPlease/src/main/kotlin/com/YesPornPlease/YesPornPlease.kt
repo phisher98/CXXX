@@ -82,13 +82,14 @@ class YesPornPlease : MainAPI() {
         val document = app.get(data).document
         val source = document.select("source").attr("src")
         callback.invoke(
-            ExtractorLink(
-                this.name,
-                this.name,
-                source,
-                referer = mainUrl,
-                quality = Qualities.Unknown.value,
-            )
+            newExtractorLink(
+                source = this.name,
+                name = this.name,
+                url = source
+            ) {
+                this.referer = mainUrl
+                this.quality = Qualities.Unknown.value
+            }
         )
 
         return true

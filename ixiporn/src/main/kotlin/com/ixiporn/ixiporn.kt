@@ -91,13 +91,14 @@ class ixiporn : MainAPI() {
 
         document.select("div.video-player").map { res ->
             callback.invoke(
-                    ExtractorLink(
-                        source  = this.name,
-                        name    = this.name,
-                        url     = fixUrl(res.selectFirst("meta[itemprop=contentURL]")?.attr("content")?.trim().toString()),
-                        referer = data,
-                        quality = Qualities.Unknown.value
-                    )
+                newExtractorLink(
+                    source = this.name,
+                    name = this.name,
+                    url = fixUrl(res.selectFirst("meta[itemprop=contentURL]")?.attr("content")?.trim().toString())
+                ) {
+                    this.referer = data
+                    this.quality = Qualities.Unknown.value
+                }
             )
         }
 

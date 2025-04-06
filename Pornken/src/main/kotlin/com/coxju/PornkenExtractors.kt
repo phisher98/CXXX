@@ -4,6 +4,7 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 // class D0000dExtractor : DoodLaExtractor() {
 //     override var mainUrl = "https://d0000d.com"
@@ -34,14 +35,14 @@ class D0000dExtractor : ExtractorApi() {
                 ?.get(0)
 
         return listOf(
-            ExtractorLink(
-                this.name,
-                this.name,
-                trueUrl,
-                mainUrl,
-                getQualityFromName(quality),
-                false
-            )
+            newExtractorLink(
+                source = this.name,
+                name = this.name,
+                url = trueUrl
+            ) {
+                this.referer = mainUrl
+                this.quality = getQualityFromName(quality)
+            }
         ) // links are valid for 8h
     }
 }

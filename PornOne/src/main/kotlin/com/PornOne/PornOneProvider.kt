@@ -111,7 +111,15 @@ class PornOneProvider : MainAPI() {
         sources.forEach { item->
             val src = item.attr("src")
             val quality = item.attr("res")
-            callback.invoke(ExtractorLink(name,name,src,"",quality.toInt()))
+            callback.invoke(newExtractorLink(
+                source = name,
+                name = name,
+                url = src
+            ) {
+                this.referer = ""
+                this.quality = quality.toInt()
+            }
+            )
         }
 
 

@@ -111,17 +111,18 @@ class Fxprnhd : MainAPI() {
         if (iframe.startsWith(mainUrl)) {
             val video = app.get(iframe, referer = data).document.select("video source").attr("src")
             callback.invoke(
-                ExtractorLink(
-                    this.name,
-                    this.name,
-                    video,
-                    "$mainUrl/",
-                    Qualities.Unknown.value,
-                    INFER_TYPE,
-                    headers = mapOf(
-                        "Range" to "bytes=0-",
-                    ),
-                )
+                newExtractorLink(
+                    source = this.name,
+                    name = this.name,
+                    url = video,
+                    type = INFER_TYPE
+                ) {
+                    this.referer = "$mainUrl/"
+                    this.quality = Qualities.Unknown.value
+                    this.headers = mapOf(
+                        "Range" to "bytes=0-"
+                    )
+                }
             )
         } else {
             loadExtractor(iframe, "$mainUrl/", subtitleCallback, callback)

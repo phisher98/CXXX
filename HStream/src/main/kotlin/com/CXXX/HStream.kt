@@ -102,14 +102,15 @@ class HStream : MainAPI() {
             resolutions.forEach { resolution ->
                 val url = urlBase + getVideoUrlPath(req.legacy != 0, resolution)
                 callback.invoke(
-                    ExtractorLink(
-                        name,
-                        name,
-                        url,
-                        "",
-                        getQualityFromName("${resolution}p"),
+                    newExtractorLink(
+                        source = name,
+                        name = name,
+                        url = url,
                         INFER_TYPE
-                    )
+                    ) {
+                        this.referer = ""
+                        this.quality = getQualityFromName("${resolution}p")
+                    }
                 )
                 subtitleCallback.invoke(
                     SubtitleFile(

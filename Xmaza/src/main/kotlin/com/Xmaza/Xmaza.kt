@@ -74,13 +74,14 @@ class Xmaza : MainAPI() {
         val document = app.get(data).document
         val source=document.selectFirst("#my-video source")?.attr("src") ?:""
         callback.invoke(
-            ExtractorLink(
-                source  = this.name,
-                name    = this.name,
-                url     = source,
-                referer = data,
-                quality = Qualities.Unknown.value
-            )
+            newExtractorLink(
+                source = this.name,
+                name = this.name,
+                url = source
+            ) {
+                this.referer = data
+                this.quality = Qualities.Unknown.value
+            }
         )
         return true
     }

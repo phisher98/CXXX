@@ -88,13 +88,14 @@ class Pornmz : MainAPI() {
         val source = app.get(iframe).document.select("video source").attr("src")
 
         callback.invoke(
-            ExtractorLink(
-                "Pornmz",
-                "Pornmz",
-                source,
-                mainUrl,
-                Qualities.Unknown.value
-            )
+            newExtractorLink(
+                source = "Pornmz",
+                name = "Pornmz",
+                url = source
+            ) {
+                this.referer = mainUrl
+                this.quality = Qualities.Unknown.value
+            }
         )
         return true
     }

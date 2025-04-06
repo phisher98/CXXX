@@ -17,6 +17,7 @@ import java.util.Base64
 import android.util.Log
 import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.utils.JsUnpacker
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 class DoodPmExtractor : DoodLaExtractor() {
     override var mainUrl = "https://dood.pm"
@@ -37,14 +38,15 @@ open class Lulustream : ExtractorApi() {
         JsUnpacker(extractedpack).unpack()?.let { unPacked ->
             Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)?.let { link ->
                 return listOf(
-                    ExtractorLink(
-                        this.name,
-                        this.name,
-                        link,
-                        referer ?: "",
-                        Qualities.Unknown.value,
-                        type = INFER_TYPE
-                    )
+                    newExtractorLink(
+                        source = this.name,
+                        name = this.name,
+                        url = link,
+                        INFER_TYPE
+                    ) {
+                        this.referer = referer ?: ""
+                        this.quality = Qualities.Unknown.value
+                    }
                 )
             }
         }
@@ -71,14 +73,15 @@ open class Vidguardto : ExtractorApi() {
             val watchlink = sigDecode(jsonStr2.stream)
 
             callback.invoke(
-                ExtractorLink(
-                    this.name,
-                    name,
-                    watchlink,
-                    this.mainUrl,
-                    Qualities.Unknown.value,
+                newExtractorLink(
+                    source = this.name,
+                    name = name,
+                    url = watchlink,
                     INFER_TYPE
-                )
+                ) {
+                    this.referer = mainUrl
+                    this.quality = Qualities.Unknown.value
+                }
             )
         }
     }

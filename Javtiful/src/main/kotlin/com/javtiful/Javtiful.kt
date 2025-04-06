@@ -6,6 +6,7 @@ import org.jsoup.nodes.Element
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 
 class Javtiful : MainAPI() {
@@ -86,16 +87,20 @@ class Javtiful : MainAPI() {
         val form= mapOf("video_id" to postid,"pid_c" to "","token" to token)
         val m3u8= app.post("$mainUrl/ajax/get_cdn", data = form).parsedSafe<Response>()?.playlists
         if (m3u8!=null)
-        callback.invoke(
-            ExtractorLink(
-                name,
-                name,
-                m3u8,
-                "$mainUrl/",
-                Qualities.Unknown.value,
-                INFER_TYPE,
+        {
+            callback.invoke(
+                newExtractorLink(
+                    source = name,
+                    name = name,
+                    url = m3u8,
+                    INFER_TYPE
+                ) {
+                    this.referer = "$mainUrl/"
+                    this.quality = Qualities.Unknown.value
+                }
+
             )
-        )
+        }
         return true
     }
 

@@ -97,14 +97,17 @@ class MissAVProvider : MainAPI() {
             getAndUnpack(this.text).let { unpackedText ->
                 val linkList = unpackedText.split(";")
                 val finalLink = "source='(.*)'".toRegex().find(linkList.first())?.groups?.get(1)?.value
-                callback.invoke(ExtractorLink(
-                    name,
-                    name,
-                    finalLink.toString(),
-                    "",
-                    Qualities.Unknown.value,
-                    isM3u8 = true
-                ))
+                callback.invoke(
+                    newExtractorLink(
+                    source = name,
+                    name = name,
+                    url = finalLink.toString(),
+                    ExtractorLinkType.M3U8
+                ) {
+                    this.referer = ""
+                    this.quality = Qualities.Unknown.value
+                }
+                )
             }
         }
 

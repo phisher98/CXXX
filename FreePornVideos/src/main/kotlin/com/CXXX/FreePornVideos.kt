@@ -125,13 +125,15 @@ class FreePornVideos : MainAPI() {
         val document = app.get(data).document
         document.select("video source").map { res ->
             callback.invoke(
-                ExtractorLink(
-                    "FPV",
-                    "FPV",
-                    res.attr("src"),
-                    referer = data,
-                    quality = getQualityFromName(res.attr("label")),
-                )
+                newExtractorLink(
+                    source = "FPV",
+                    name = "FPV",
+                    url = res.attr("src"),
+                    type = ExtractorLinkType.M3U8
+                ) {
+                    this.referer = data
+                    this.quality = getQualityFromName(res.attr("label"))
+                }
             )
         }
 

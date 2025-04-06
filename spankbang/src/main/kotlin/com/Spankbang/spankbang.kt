@@ -92,13 +92,15 @@ class Spankbang : MainAPI() {
 
         document.select("div#video_container").map { res ->
             callback.invoke(
-                    ExtractorLink(
-                        source  = this.name,
-                        name    = this.name,
-                        url     = fixUrl(res.selectFirst("video > source")?.attr("src")?.trim().toString()),
-                        referer = data,
-                        quality = Qualities.Unknown.value
-                    )
+                newExtractorLink(
+                    source = this.name,
+                    name = this.name,
+                    url = fixUrl(res.selectFirst("video > source")?.attr("src")?.trim().toString()),
+                    type = ExtractorLinkType.M3U8
+                ) {
+                    this.referer = data
+                    this.quality = Qualities.Unknown.value
+                }
             )
         }
 

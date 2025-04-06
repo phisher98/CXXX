@@ -131,14 +131,19 @@ class GoodPorn : MainAPI() {
 
         document.select("div.info div:last-child a").map { res ->
             callback.invoke(
-                ExtractorLink(
-                    this.name,
-                    this.name,
-                    res.attr("href").replace(Regex("\\?download\\S+.mp4&"), "?") + "&rnd=${Date().time}",
-                    referer = data,
-                    quality = Regex("([0-9]+p),").find(res.text())?.groupValues?.get(1).let { getQualityFromName(it) },
-                    headers = mapOf("Range" to "bytes=0-"),
-                )
+                newExtractorLink(
+                    source = this.name,
+                    name = this.name,
+                    url = res.attr("href")
+                        .replace(Regex("\\?download\\S+.mp4&"), "?") + "&rnd=${Date().time}"
+                ).apply {
+                    this.referer = data
+                    this.quality = Regex("([0-9]+p),")
+                        .find(res.text())?.groupValues?.get(1)
+                        .let { getQualityFromName(it) }
+
+                    this.headers = mapOf("Range" to "bytes=0-")
+                }
             )
         }
 

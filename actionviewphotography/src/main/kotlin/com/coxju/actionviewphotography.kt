@@ -89,6 +89,13 @@ class actionviewphotography : MainAPI() {
             val jsonObject = JSONObject(jsonString)
             val sources = jsonObject.getJSONArray("sources")
             val extlinkList = mutableListOf<ExtractorLink>()
+            val headers = mapOf(
+                "Accept" to "*/*",
+                "Sec-Fetch-Dest" to "video",
+                "Sec-Fetch-Mode" to "no-cors",
+                "Sec-Fetch-Site" to "cross-site"
+                "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+            )
 
             for (i in 0 until sources.length()) {
                 val source = sources.getJSONObject(i)
@@ -97,10 +104,11 @@ class actionviewphotography : MainAPI() {
                         source = name,
                         name = name,
                         url = httpsify(source.getString("file")),
-                        type = INFER_TYPE
+                        type = ExtractorLinkType.VIDEO
                     ) {
                         this.referer = mainUrl
                         this.quality = getQualityFromName(source.getString("label"))
+                        this.headers = headers
                     }
                 )
             }

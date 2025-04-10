@@ -93,7 +93,7 @@ class actionviewphotography : MainAPI() {
                 "Accept" to "*/*",
                 "Sec-Fetch-Dest" to "video",
                 "Sec-Fetch-Mode" to "no-cors",
-                "Sec-Fetch-Site" to "cross-site"
+                "Sec-Fetch-Site" to "cross-site",
                 "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
             )
 

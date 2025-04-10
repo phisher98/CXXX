@@ -80,7 +80,8 @@ class YesPornPlease : MainAPI() {
         ): Boolean {
 
         val document = app.get(data).document
-        val source = document.select("source").attr("src")
+        val iframe = document.select("iframe").attr("data-litespeed-src")
+        val source = app.get(iframe).document.select("video > a").attr("href")
         callback.invoke(
             newExtractorLink(
                 source = this.name,

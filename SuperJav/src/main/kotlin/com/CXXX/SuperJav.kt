@@ -1,12 +1,12 @@
 package com.CXXX
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.extractors.StreamTape
-import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+import com.lagradost.cloudstream3.extractors.VidhideExtractor
 
 class SuperJav : MainAPI() {
     override var mainUrl              = "https://supjav.com"
@@ -15,7 +15,7 @@ class SuperJav : MainAPI() {
     override var lang                 = "en"
     override val supportedTypes       = setOf(TvType.NSFW)
     override val vpnStatus            = VPNStatus.MightBeNeeded
-
+    val subtitleCatUrl = "https://www.subtitlecat.com"
     override val mainPage = mainPageOf(
         "category/censored-jav" to "Censored Jav",
         "category/english-subtitles" to "English Jav",
@@ -88,21 +88,63 @@ class SuperJav : MainAPI() {
             Log.d("Phisher",sourcefetch)
             loadExtractor(sourcefetch, referer = mainUrl,subtitleCallback, callback)
         }
+
+        try {
+            val doc= app.get(data).document
+            val title = doc.select("head > title").text()
+            val javCode = "([a-zA-Z]+-\\d+)".toRegex().find(title)?.groups?.get(1)?.value
+            if(!javCode.isNullOrEmpty())
+            {
+                val query = "$subtitleCatUrl/index.php?search=$javCode"
+                val subDoc = app.get(query, timeout = 15).document
+                val subList = subDoc.select("td a")
+                for(item in subList)
+                {
+                    if(item.text().contains(javCode))
+                    {
+                        val fullUrl = "$subtitleCatUrl/${item.attr("href")}"
+
+                        val pDoc = app.get(fullUrl, timeout = 10).document
+                        val sList = pDoc.select(".col-md-6.col-lg-4")
+                        for(item in sList)
+                        {
+                            try {
+                                Log.d("Phisher",item.toString())
+
+                                val language = item.select(".sub-single span:nth-child(2)").text()
+                                val text = item.select(".sub-single span:nth-child(3) a")
+                                if(text.size > 0 && text[0].text() == "Download")
+                                {
+                                    val url = "$subtitleCatUrl${text[0].attr("href")}"
+                                    subtitleCallback.invoke(
+                                        SubtitleFile(
+                                            language.replace("\uD83D\uDC4D \uD83D\uDC4E",""),  // Use label for the name
+                                            url     // Use extracted URL
+                                        )
+                                    )
+                                }
+                            } catch (_: Exception) { }
+                        }
+
+                    }
+                }
+            }
+        } catch (_: Exception) { }
+
         return true
     }
 }
 
-
-
-class watchadsontape : StreamTape() {
-    override var mainUrl = "https://watchadsontape.com"
-    override var name = "StreamTape"
-}
-
-open class Fc2stream : ExtractorApi() {
-    override val name = "Streamwish"
-    override val mainUrl = "https://fc2stream.tv"
+@Suppress("NAME_SHADOWING")
+open class Voe : ExtractorApi() {
+    override val name = "Voe"
+    override val mainUrl = "https://voe.sx"
     override val requiresReferer = true
+
+    private val linkRegex =
+        "(http|https)://([\\w_-]+(?:\\.[\\w_-]+)+)([\\w.,@?^=%&:/~+#-]*[\\w@?^=%&/~+#-])".toRegex()
+    private val base64Regex = Regex("'.*'")
+    private val redirectRegex = Regex("""window.location.href = '([^']+)';""")
 
     override suspend fun getUrl(
         url: String,
@@ -110,47 +152,77 @@ open class Fc2stream : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val headers = mapOf(
-            "Accept" to "*/*",
-            "Connection" to "keep-alive",
-            "Sec-Fetch-Dest" to "empty",
-            "Sec-Fetch-Mode" to "cors",
-            "Sec-Fetch-Site" to "cross-site",
-            "Origin" to "$mainUrl/",
-            "User-Agent" to USER_AGENT
-        )
-        val response = app.get(getEmbedUrl(url), referer = referer)
-        val script = if (!getPacked(response.text).isNullOrEmpty()) {
-            getAndUnpack(response.text)
-        } else if (!response.document.select("script").firstOrNull {
-                it.html().contains("jwplayer(\"vplayer\").setup(")
-            }?.html().isNullOrEmpty()
-        ) {
-            response.document.select("script").firstOrNull {
-                it.html().contains("jwplayer(\"vplayer\").setup(")
-            }?.html()
-        } else {
-            response.document.selectFirst("script:containsData(sources:)")?.data()
+        Log.d("VoeExtractor", "Initial URL: $url")
+
+        var res = app.get(url, referer = referer).document
+        Log.d("VoeExtractor", "Response received for initial URL")
+
+        // Check for window.location.href in the script data
+        val redirectUrl = redirectRegex.find(res.data())?.groupValues?.get(1)
+
+        if (redirectUrl != null) {
+            // If window.location.href is found, perform another GET request to the redirected URL
+            Log.d("VoeExtractor", "Redirect found: $redirectUrl")
+            res = app.get(redirectUrl, referer = referer).document
+            Log.d("VoeExtractor", "Response received for redirected URL")
         }
-        val m3u8 =
-            Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script ?: return)?.groupValues?.getOrNull(1)
-        M3u8Helper.generateM3u8(
-            name,
-            m3u8 ?: return,
-            mainUrl,
-            headers = headers
-        ).forEach(callback)
+
+        val script =
+            if (!res.select("script").firstOrNull() { it.data().contains("sources =") }?.data()
+                    .isNullOrEmpty()
+            ) {
+                res.select("script").find { it.data().contains("sources =") }?.data()
+            } else {
+                redirectRegex.find(res.data())?.groupValues?.get(1)?.let { redirectUrl ->
+                    Log.d("VoeExtractor", "Redirecting to: $redirectUrl")
+                    app.get(redirectUrl, referer = referer).document.select("script")
+                        .find { it.data().contains("sources =") }?.data()
+                }
+            }
+
+        Log.d("VoeExtractor", "Script data extracted: $script")
+
+        val link =
+            Regex("[\"']hls[\"']:\\s*[\"'](.*)[\"']").find(script ?: return)?.groupValues?.get(1)
+
+        Log.d("VoeExtractor", "Video link found: $link")
+
+        val videoLinks = mutableListOf<String>()
+
+        if (!link.isNullOrBlank()) {
+            videoLinks.add(
+                when {
+                    linkRegex.matches(link) -> link
+                    else -> base64Decode(link)
+                }
+            )
+        } else {
+            val link2 = base64Regex.find(script)?.value ?: return
+            val decoded = base64Decode(link2)
+            val videoLinkDTO = AppUtils.parseJson<WcoSources>(decoded)
+            videoLinkDTO.let { videoLinks.add(it.toString()) }
+        }
+
+        videoLinks.forEach { videoLink ->
+            Log.d("VoeExtractor", "Generating M3U8 for: $videoLink")
+            M3u8Helper.generateM3u8(
+                name,
+                videoLink,
+                "$mainUrl/",
+                headers = mapOf("Origin" to "$mainUrl/")
+            ).forEach(callback)
+        }
     }
 
-    private fun getEmbedUrl(url: String): String {
-        return if (url.contains("/f/")) {
-            val videoId = url.substringAfter("/f/")
-            "$mainUrl/$videoId"
-        } else {
-            url
-        }
-    }
+    data class WcoSources(
+        @JsonProperty("VideoLinkDTO") val VideoLinkDTO: String,
+    )
+}
 
+
+class watchadsontape : StreamTape() {
+    override var mainUrl = "https://watchadsontape.com"
+    override var name = "StreamTape"
 }
 
 
@@ -160,20 +232,17 @@ open class EmturbovidExtractor : ExtractorApi() {
     override val requiresReferer = false
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        Log.d("Phisher url",url)
         val response = app.get(
             url, referer = referer ?: "$mainUrl/"
-        ).document.select("script:containsData(function(h,u,n,t,e,r))").text()
-        Log.d("Phisher url",response)
+        ).document.select("#video_player").attr("data-hash")
         val sources = mutableListOf<ExtractorLink>()
         if (response.isNotBlank()) {
-            val m3u8Url =""
 
             sources.add(
                 newExtractorLink(
                     source = name,
                     name = name,
-                    url = m3u8Url,
+                    url = response,
                     ExtractorLinkType.M3U8
                 ) {
                     this.referer = "$mainUrl/"
@@ -183,4 +252,9 @@ open class EmturbovidExtractor : ExtractorApi() {
         }
         return sources
     }
+}
+
+class fc2stream: VidhideExtractor() {
+    override var mainUrl="https://fc2stream.tv"
+    override val requiresReferer = false
 }

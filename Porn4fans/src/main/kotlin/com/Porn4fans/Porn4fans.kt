@@ -41,10 +41,13 @@ class Porn4fans : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title     = this.select("a").attr("title")
         val href      = this.select("a").attr("href")
-        val posterUrl = this.select("img").attr("src")
+        val posterUrl = this.select("img").attr("srcset")
 
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
+            this.posterHeaders = mapOf(
+                "Referer" to "$mainUrl/"
+            )
         }
     }
 
@@ -75,15 +78,18 @@ class Porn4fans : MainAPI() {
         return newMovieLoadResponse(jsonObject.name, url, TvType.NSFW, jsonObject.contentUrl) {
             this.posterUrl = jsonObject.thumbnailUrl
             this.plot      = jsonObject.description
+            this.posterHeaders = mapOf(
+                "Referer" to "$mainUrl/"
+            )
         }
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         callback.invoke(
             newExtractorLink(
-                source = "Porn4fans",
-                name = "Porn4fans",
-                url = data
+                this.name,
+                this.name,
+                data
             ) {
                 this.referer = mainUrl
                 this.quality = Qualities.Unknown.value

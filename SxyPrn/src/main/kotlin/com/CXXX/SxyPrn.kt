@@ -135,8 +135,8 @@ class SxyPrn : MainAPI() {
                 val magnetLink = doc.select("a.md_btn").attr("href")
                 callback.invoke(
                     newExtractorLink(
-                        "$name - $type",
-                        "$name - $type",
+                        "$name[Magnet]",
+                        "$name[Magnet]",
                         magnetLink,
                         ExtractorLinkType.MAGNET
                     )

@@ -7,6 +7,8 @@ import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.runAllAsync
 
 class SxyPrn : MainAPI() {
     override var mainUrl = "https://sxyprn.com"
@@ -121,31 +123,49 @@ class SxyPrn : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data).document
-        document.select("div.post_el_wrap a.extlink").map {
-            loadExtractor(it.attr("href"), "", subtitleCallback, callback)
-        }
-        val parsed = AppUtils.parseJson<Map<String, String>>(
-            document.select("span.vidsnfo").attr("data-vnfo")
+        runAllAsync(
+            {
+                document.select("div.post_el_wrap a.extlink").amap {
+                    loadExtractor(it.attr("href"), "", subtitleCallback, callback)
+                }
+            },
+            {
+                val torrentLink = document.select("a.mpc_btn").attr("href")
+                val doc = app.get(torrentLink).document
+                val magnetLink = doc.select("a.md_btn").attr("href")
+                callback.invoke(
+                    newExtractorLink(
+                        "$name - $type",
+                        "$name - $type",
+                        magnetLink,
+                        ExtractorLinkType.MAGNET
+                    )
+                )
+            },
         )
-        parsed[parsed.keys.toList()[0]]
-        var url = parsed[parsed.keys.toList()[0]].toString()
 
-        var tmp = url.split("/").toMutableList()
-        tmp[1] += "8"
-        tmp = updateUrl(tmp)
+        // val parsed = AppUtils.parseJson<Map<String, String>>(
+        //     document.select("span.vidsnfo").attr("data-vnfo")
+        // )
+        // parsed[parsed.keys.toList()[0]]
+        // var url = parsed[parsed.keys.toList()[0]].toString()
 
-        url = fixUrl(tmp.joinToString("/"))
+        // var tmp = url.split("/").toMutableList()
+        // tmp[1] += "8"
+        // tmp = updateUrl(tmp)
 
-        callback.invoke(
-            newExtractorLink(
-                source = this.name,
-                name = this.name,
-                url = url
-            ) {
-                this.referer = ""
-                this.quality = Qualities.Unknown.value
-            }
-        )
+        // url = fixUrl(tmp.joinToString("/"))
+
+        // callback.invoke(
+        //     newExtractorLink(
+        //         source = this.name,
+        //         name = this.name,
+        //         url = url
+        //     ) {
+        //         this.referer = ""
+        //         this.quality = Qualities.Unknown.value
+        //     }
+        // )
         return true
     }
 }

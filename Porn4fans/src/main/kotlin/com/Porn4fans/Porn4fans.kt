@@ -41,12 +41,13 @@ class Porn4fans : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title     = this.select("a").attr("title")
         val href      = this.select("a").attr("href")
-        val posterUrl = this.select("img").attr("srcset")
+        val posterUrl = this.select("img").attr("data-webp")
 
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
             this.posterHeaders = mapOf(
-                "Referer" to "$mainUrl/"
+                "Referer" to "$mainUrl/",
+                "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
             )
         }
     }
@@ -79,7 +80,8 @@ class Porn4fans : MainAPI() {
             this.posterUrl = jsonObject.thumbnailUrl
             this.plot      = jsonObject.description
             this.posterHeaders = mapOf(
-                "Referer" to "$mainUrl/"
+                "Referer" to "$mainUrl/",
+                "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
             )
         }
     }

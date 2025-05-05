@@ -177,7 +177,7 @@ class XhamsterProvider: MainAPI() {
                 newMovieSearchResponse(title, href, TvType.NSFW) { this.posterUrl = poster }
             }
             if (!items.isNullOrEmpty()) {
-                listTitle = "Video Trang Chủ (JSON)" // Đặt lại tiêu đề nếu lấy từ JSON
+                listTitle = "Video Trang Chủ" // Đặt lại tiêu đề nếu lấy từ JSON
                 Log.d(name, "getMainPage: Mapped ${items.size} items from JSON.")
             } else {
                  Log.w(name, "getMainPage: JSON items list is null or empty after mapping.")
@@ -192,7 +192,7 @@ class XhamsterProvider: MainAPI() {
                 parseVideoItem(element)
             }
              if (items.isNotEmpty()) {
-                 listTitle = "Video Trang Chủ (HTML)" // Đặt lại tiêu đề nếu lấy từ HTML
+                 listTitle = "Video Trang Chủ" // Đặt lại tiêu đề nếu lấy từ HTML
                  Log.d(name, "getMainPage: Mapped ${items.size} items from HTML fallback.")
              } else {
                   Log.w(name, "getMainPage: HTML fallback also yielded no items.")
@@ -263,35 +263,68 @@ class XhamsterProvider: MainAPI() {
     }
 
 
-    // Hàm load (Giữ nguyên như trước)
+    // === HÀM load (REVISED - HTML ONLY FOR RECOMMENDATIONS) ===
     override suspend fun load(url: String): LoadResponse? {
-        // ... (Code giữ nguyên) ...
-         Log.d(name, "Loading URL: $url")
+        Log.d(name, "Loading URL: $url")
         val document = try { app.get(url).document } catch (e: Exception) { Log.e(name, "Failed to load URL $url: ${e.message}"); return null }
-        val htmlContent = document.html()
-        val initialData = getInitialsJson(htmlContent)
+        val htmlContent = document.html() // Get HTML once
+        val initialData = getInitialsJson(htmlContent) // Still parse JSON for other data
 
-        val title = initialData?.videoEntity?.title ?: document.selectFirst("meta[property=og:title]")?.attr("content") ?: document.selectFirst("title")?.text()?.substringBefore("|")?.trim() ?: return null
-        Log.d(name, "Load Title: $title")
-        val plot = initialData?.videoEntity?.description ?: document.selectFirst("div.video-description p[itemprop=description]")?.text()?.trim()
-        val poster = initialData?.xplayerSettings?.poster?.url ?: initialData?.videoEntity?.thumbBig ?: document.selectFirst("meta[property=og:image]")?.attr("content")
+        // --- Extract main info (Prioritize JSON, fallback HTML) ---
+        val title = initialData?.videoEntity?.title
+            ?: document.selectFirst("meta[property=og:title]")?.attr("content")
+            ?: document.selectFirst("title")?.text()?.substringBefore("|")?.trim()
+            ?: run { Log.e(name, "Could not find title for $url"); return null }
+
+        val plot = initialData?.videoEntity?.description
+            ?: document.selectFirst("div.video-description p[itemprop=description]")?.text()?.trim()
+
+        val poster = initialData?.xplayerSettings?.poster?.url
+            ?: initialData?.videoEntity?.thumbBig
+            ?: document.selectFirst("meta[property=og:image]")?.attr("content")
         val fixedPoster = fixUrlNull(poster)
-        val tags = initialData?.videoTagsComponent?.tags?.mapNotNull { it.name } ?: document.select("section[data-role=video-tags] a.item").mapNotNull { it.text() }.ifEmpty { null }
-        val recommendations = initialData?.relatedVideos?.videoTabInitialData?.videoListProps?.videoThumbProps?.mapNotNull { item ->
-             val recTitle = item.title ?: return@mapNotNull null
-             val recUrl = fixUrlNull(item.pageURL) ?: return@mapNotNull null
-             val recPoster = fixUrlNull(item.thumbUrl)
-             newMovieSearchResponse(recTitle, recUrl, TvType.NSFW) { this.posterUrl = recPoster }
+
+        val tags = initialData?.videoTagsComponent?.tags?.mapNotNull { it.name }
+            ?: document.select("section[data-role=video-tags] a.item").mapNotNull { it.text() }.ifEmpty { null }
+        // --- End of main info extraction ---
+
+        // === Parse recommendations using HTML ONLY ===
+        var recommendations: List<SearchResponse>? = null
+        try {
+            // Try the refined selector targeting the related videos section
+            val relatedItemsSelector = "div[data-role=video-related] div.mobile-video-thumb"
+            recommendations = document.select(relatedItemsSelector).mapNotNull { element ->
+                parseVideoItem(element) // Reuse the HTML item parser
+            }.ifEmpty { null } // Assign null if list is empty
+
+            Log.d(name, "Found ${recommendations?.size ?: 0} recommendations using HTML selector '$relatedItemsSelector'.")
+
+            // If the first selector failed, maybe try a broader one (less reliable)
+            if (recommendations == null) {
+                 Log.w(name, "Primary HTML selector for recommendations failed, trying broader selector.")
+                 recommendations = document.select("ul.thumb-list div.mobile-video-thumb") // Broader guess
+                    .mapNotNull { parseVideoItem(it) }
+                    .filter { it.url != url } // Filter out the current video if it appears
+                    .ifEmpty { null }
+                 Log.d(name, "Found ${recommendations?.size ?: 0} recommendations using broader HTML selector.")
+            }
+
+        } catch (e: Exception) {
+            Log.e(name, "Error parsing recommendations from HTML: ${e.message}")
+            e.printStackTrace()
+            recommendations = null
         }
+        // === End of recommendations parsing ===
+
+        Log.i(name, "Final recommendations count being added to LoadResponse: ${recommendations?.size}")
 
         return newMovieLoadResponse(title, url, TvType.NSFW, url) {
              this.plot = plot
              this.posterUrl = fixedPoster
              this.tags = tags
-             this.recommendations = recommendations
+             this.recommendations = recommendations // Assign the parsed recommendations
         }
     }
-
 
     // Hàm loadLinks (Giữ nguyên như trước)
     override suspend fun loadLinks(

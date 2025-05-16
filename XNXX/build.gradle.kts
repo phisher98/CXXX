@@ -19,7 +19,7 @@ cloudstream {
     tvTypes = listOf(
         "NSFW"
     )
-    iconUrl = "https://www.google.com/s2/favicons?domain=https://www.xvideos.com&sz=256"
+    iconUrl = "https://www.google.com/s2/favicons?domain=https://www.xnxx.com&sz=256"
 
     isCrossPlatform = true
 }

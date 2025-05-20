@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.httpsify
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
@@ -86,10 +87,7 @@ class SxyPrn : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title = document.selectFirst("div.post_text")?.text()?.trim().toString()
-        val poster = fixUrlNull(
-            document.selectFirst("meta[property=og:image]")
-                ?.attr("content")
-        )
+        val poster = httpsify(document.select("meta[property=og:image]").attr("content"))
 
         val recommendations = document.select("div.main_content div div.post_el_small").mapNotNull {
             it.toSearchResult()

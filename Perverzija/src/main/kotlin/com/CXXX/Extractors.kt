@@ -37,20 +37,27 @@ open class Xtremestream : ExtractorApi() {
                 playerScript.substringAfter("var m3u8_loader_url = `").substringBefore("`;")
 
             if (videoId.isNotBlank() && m3u8LoaderUrl.isNotBlank()) {
-                callback.invoke(
-                    newExtractorLink(
-                        name,
-                        name,
-                        "$m3u8LoaderUrl/$videoId",
-                        type = ExtractorLinkType.M3U8
-                    ) {
-                        this.referer = url
-                        this.headers = mapOf(
-                            "User-Agent" to USER_AGENT
-                        )
-                    }
 
-                )
+                val resolutions = listOf(1080, 720, 480)
+
+                resolutions.forEach { resolution ->
+                    callback.invoke(
+                        newExtractorLink(
+                            name,
+                            name,
+                            "${m3u8LoaderUrl}/${videoId}&q=${resolution}",
+                            type = ExtractorLinkType.M3U8
+                        ) {
+                            this.quality = resolution
+                            this.referer = url
+                            this.headers = mapOf(
+                                "Accept" to "*/*",
+                                "Referer" to url,
+                                "User-Agent" to USER_AGENT
+                            )
+                        }
+                    )
+                }
             }
         }
     }

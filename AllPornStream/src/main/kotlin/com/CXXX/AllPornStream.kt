@@ -2,11 +2,14 @@ package com.CXXX
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.StreamTape
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 
 class AllPornStream : MainAPI() {
     override var mainUrl = "https://allpornstream.com"
@@ -57,10 +60,10 @@ class AllPornStream : MainAPI() {
         )
     }
 
-    private fun Post.toSearchResult(): SearchResponse {
+    private fun PostMain.toSearchResult(): SearchResponse {
         val title = this.videoTitle
         val href = this.id
-        val posterUrl = this.imageDetails.flatten()
+        val posterUrl = this.imageDetails
             .firstOrNull { it.startsWith("http") }
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
@@ -72,7 +75,6 @@ class AllPornStream : MainAPI() {
         val title = this.videoTitle
         val href = this.id
         val posterUrl = this.imageDetails
-            .flatten()
             .firstOrNull { it.startsWith("http") }
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
@@ -96,7 +98,7 @@ class AllPornStream : MainAPI() {
         val res = app.get("$mainUrl/api/post?id=${url.substringAfterLast("/")}").parsedSafe<Load>()
         val loaddata=res?.post
         val title = loaddata?.videoTitle ?: "Unknown"
-        val poster = loaddata?.imageDetails?.flatten()
+        val poster = loaddata?.imageDetails
             ?.firstOrNull { it.startsWith("http") }
         val tags = loaddata?.categories?.map { it }
         val description = loaddata?.videoDescription
@@ -115,18 +117,18 @@ class AllPornStream : MainAPI() {
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
-    ): Boolean {
+    ): Boolean = coroutineScope {
         val parsedList = data.fromJson<List<String>>()
-        parsedList.forEach {
-            loadExtractor(it, "$mainUrl/", subtitleCallback, callback)
-        }
-        return true
+        parsedList.map { url ->
+            launch {
+                Log.d("Phisher", url)
+                loadExtractor(url, "$mainUrl/", subtitleCallback, callback)
+            }
+        }.joinAll()
+
+        true
     }
+
     val gson = Gson()
     private inline fun <reified T> String.fromJson(): T = gson.fromJson(this, object : TypeToken<T>() {}.type)
-}
-
-
-class StreamTapeto : StreamTape() {
-    override var mainUrl = "https://streamtape.to"
 }

@@ -141,7 +141,6 @@ class SxyPrn : MainAPI() {
                 )
             },
         )
-
         // val parsed = AppUtils.parseJson<Map<String, String>>(
         //     document.select("span.vidsnfo").attr("data-vnfo")
         // )

@@ -9,5 +9,6 @@ class AllPornStreamPlugin: Plugin() {
     override fun load(context: Context) {
         registerMainAPI(AllPornStream())
         registerExtractorAPI(StreamTapeto())
+        registerExtractorAPI(BigwarpIO())
     }
 }

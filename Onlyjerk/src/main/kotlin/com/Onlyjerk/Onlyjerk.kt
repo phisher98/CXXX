@@ -87,8 +87,8 @@ class Onlyjerk : MainAPI() {
 
         document.select("button.button_choice_server").amap {
             val onclick = it.attr("onclick")
-            val regex = Regex("playEmbed\(event,'(https://[^']+)'")
-            val url = regex.find(onclick)?.groupValues?.get(1)
+            val regex = Regex("playEmbed\\(event,'(https://[^']+)'")
+            val url = regex.find(onclick)?.groupValues?.get(1) ?: return@amap
             loadExtractor(
                 url,
                 data,

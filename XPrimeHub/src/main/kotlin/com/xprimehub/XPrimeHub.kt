@@ -1,3 +1,5 @@
+@file:Suppress("NAME_SHADOWING")
+
 package com.xprimehub
 
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -7,7 +9,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.nodes.Element
 
 class XPrimeHub : MainAPI() {
-    override var mainUrl              = "https://xprimehub.vip"
+    override var mainUrl              = "https://xprimehub.lat"
     override var name                 = "XPrimeHub"
     override val hasMainPage          = true
     override var lang                 = "hi"
@@ -122,9 +124,7 @@ class VCloud : ExtractorApi() {
             val document = app.get(urlValue).document
             val size = document.selectFirst("i#size")?.text() ?: ""
             val header = document.selectFirst("div.card-header")?.text() ?: ""
-            val headerDetails =
-                """\.\d{3,4}p\.(.*)-[^-]*${'$'}""".toRegex().find(header)?.groupValues?.get(1)?.trim() ?: ""
-
+            val title=document.select("div.card-header").text().replace("."," ")
             document.selectFirst("div.card-body")?.select("h2 a.btn")
                 ?.filterNot { it.text().contains("Telegram", ignoreCase = true) }
                 ?.forEach { linkElement ->
@@ -135,7 +135,7 @@ class VCloud : ExtractorApi() {
                             val href = app.get(link).document.selectFirst("#vd")?.attr("href") ?: ""
                             callback.invoke(
                                 newExtractorLink(
-                                    source = "V-Cloud 10 Gbps",
+                                    source = "V-Cloud 10 Gbps $title",
                                     name = "V-Cloud 10 Gbps $size",
                                     url = href
                                 ) {
@@ -147,7 +147,7 @@ class VCloud : ExtractorApi() {
                         link.contains("pixeldra") -> {
                             callback.invoke(
                                 newExtractorLink(
-                                    source = "Pixeldrain",
+                                    source = "Pixeldrain $title",
                                     name = "Pixeldrain $size",
                                     url = link
                                 ) {
@@ -161,7 +161,7 @@ class VCloud : ExtractorApi() {
                             val downloadLink = response.headers["location"].toString().split("link=").getOrNull(1) ?: link
                             callback.invoke(
                                 newExtractorLink(
-                                    source = "V-Cloud[Download]",
+                                    source = "V-Cloud[Download] $title",
                                     name = "V-Cloud[Download] $size",
                                     url = downloadLink
                                 ) {
@@ -177,7 +177,7 @@ class VCloud : ExtractorApi() {
                             }
                             callback.invoke(
                                 newExtractorLink(
-                                    source = label,
+                                    source = "$label $title",
                                     name = "$label $size",
                                     url = link
                                 ) {

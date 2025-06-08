@@ -109,14 +109,15 @@ class Paradisehill : MainAPI() {
     ): Boolean {
 
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 this.name,
                 this.name,
                 data.replace("\\", ""),
-                referer = mainUrl,
-                quality = Qualities.Unknown.value,
 //                headers = mapOf("Range" to "bytes=0-"),
-            )
+            ) {
+                this.referer = mainUrl
+                this.quality = Qualities.Unknown.value
+            }
         )
         return true
     }

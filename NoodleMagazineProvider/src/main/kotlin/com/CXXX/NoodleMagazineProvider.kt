@@ -2,6 +2,8 @@ package com.CXXX
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
+import okhttp3.Headers
+import okhttp3.Interceptor
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.json.JSONObject
@@ -87,14 +89,6 @@ class NoodleMagazineProvider : MainAPI() { // all providers must be an instance 
             val jsonObject = JSONObject(jsonString)
             val sources = jsonObject.getJSONArray("sources")
             val extlinkList = mutableListOf<ExtractorLink>()
-            val headers = mapOf(
-                "Accept" to "*/*",
-                "Sec-Fetch-Dest" to "video",
-                "Sec-Fetch-Mode" to "no-cors",
-                "Sec-Fetch-Site" to "cross-site",
-                "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
-            )
-
             for (i in 0 until sources.length()) {
                 val source = sources.getJSONObject(i)
                 extlinkList.add(
@@ -113,5 +107,18 @@ class NoodleMagazineProvider : MainAPI() { // all providers must be an instance 
             extlinkList.forEach(callback)
         }
         return true
+    }
+
+    override fun getVideoInterceptor(extractorLink: ExtractorLink): Interceptor {
+        return Interceptor { chain ->
+            val request = chain.request()
+
+            val modifiedRequest = request.newBuilder()
+                .headers(Headers.Builder().build()) // Clear all headers
+                .header("User-Agent", "stagefright/1.2 (Linux;Android 13)")
+                .build()
+
+            chain.proceed(modifiedRequest)
+        }
     }
 }

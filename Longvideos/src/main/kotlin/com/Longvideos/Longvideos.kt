@@ -39,7 +39,11 @@ class Longvideos : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title     = this.select("a").attr("title")
         val href      = this.select("a").attr("href")
-        val posterUrl = this.select("img").attr("src")
+        var posterUrl = this.select("img").attr("src")
+
+        if(posterUrl.isEmpty()) {
+            posterUrl = this.select("img").attr("data-src")
+        }
 
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl

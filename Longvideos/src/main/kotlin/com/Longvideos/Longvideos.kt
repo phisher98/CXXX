@@ -41,7 +41,7 @@ class Longvideos : MainAPI() {
         val href      = this.select("a").attr("href")
         var posterUrl = this.select("img").attr("src")
 
-        if(posterUrl.isEmpty()) {
+        if(posterUrl.contains("data:image")) {
             posterUrl = this.select("img").attr("data-src")
         }
 

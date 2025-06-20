@@ -5,6 +5,8 @@ import org.json.JSONObject
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
+import okhttp3.Headers
+import okhttp3.Interceptor
 
 class actionviewphotography : MainAPI() {
     override var mainUrl              = "https://ukdevilz.com"
@@ -115,5 +117,18 @@ class actionviewphotography : MainAPI() {
             extlinkList.forEach(callback)
         }
         return true
+    }
+
+    override fun getVideoInterceptor(extractorLink: ExtractorLink): Interceptor {
+        return Interceptor { chain ->
+            val request = chain.request()
+
+            val modifiedRequest = request.newBuilder()
+                .headers(Headers.Builder().build()) // Clear all headers
+                .header("User-Agent", "stagefright/1.2 (Linux;Android 13)")
+                .build()
+
+            chain.proceed(modifiedRequest)
+        }
     }
 }

@@ -1,5 +1,5 @@
-version = 4
-
+version = 5
+//version updated
 cloudstream {
     authors     = listOf("Phisher98")
     language    = "en"

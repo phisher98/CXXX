@@ -11,7 +11,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 
-class AllPornStream : MainAPI() {
+MainAPI() {
     override var mainUrl = "https://allpornstream.com"
     override var name = "AllPornStream"
     override val hasMainPage = true
@@ -20,76 +20,38 @@ class AllPornStream : MainAPI() {
     override val supportedTypes = setOf(TvType.NSFW)
 
     override val mainPage = mainPageOf(
-        "studio=PenthouseGold" to "Penthouse Gold",
         "studio=ElegantAngel" to "Elegant Angel",
-        "studio=HussiePass" to "Hussie Pass",
-        "studio=ImmoralLive" to "Immoral Live",
         "studio=Blacked" to "Blacked",
-        "studio=NewSensations" to "Sensations",
         "studio=DadCrush" to "Dad Crush",
         "studio=Shoplyfter" to "Shoplyfter",
-		"studio=Tushy" to "Tushy",
-		"studio=SisLovesMe" to "SisLovesMe",
-		"studio=OnlyTarts" to "OnlyTarts",
-		"studio=TouchMyWife" to "TouchMyWife",
-		"studio=FamilyTherapyXXX" to "FamilyTherapy",
-		"studio=BlackedRaw" to "BlackedRaw",
-		"studio=BlacksOnBlondes" to "BlacksOnBlondes",
-		"studio=Spizoo" to "Spizoo",
-		"studio=HookupHotshot" to "HookupHotshot",
-		"studio=WildOnCam" to "WildOnCam",
-		"studio=HookupHotshot" to "HookupHotshot",
-		"studio=ExploitedCollegeGirls" to "ExploitedCollegeGirls",
-		"studio=BackroomCastingCouch" to "BackroomCastingCouch",
-		"studio=DeepLush" to "DeepLush",
-		"studio=GirlsWay" to "GirlsWay",
-		"studio=PornDudeCasting" to "PornDudeCasting",
-        "studio=JaysPOV" to "JaysPOV",
-		"studio=PornFidelity" to "PornFidelity",
-		"studio=TeenFidelity" to "TeenFidelity",
-		"studio=MyLifeInMiami" to "MyLifeInMiami",
-		"studio=AssParade" to "AssParade",
-		"studio=CuckHunter" to "CuckHunter",
-		"studio=GangbangCreampie" to "GangbangCreampie",
-		"studio=FreeuseFantasy" to "FreeuseFantasy",
-        "studio=TushyRaw" to "TushyRaw",
-		"studio=ExxxtraSmall" to "ExxxtraSmall",
-        "studio=SweetheartVideo" to "SweetheartVideo",
-		"studio=SpankMonster" to "SpankMonster",
-		"studio=RealityJunkies" to "RealityJunkies",
-		"studio=SheSeducedMe" to "SheSeducedMe",
-		"studio=RKPrime" to "RKPrime",
-		"studio=FreeuseMILF" to "FreeuseMILF",
-		"studio=HardX" to "HardX",
-		"studio=MomComesFirst" to "MomComesFirst",
-        "studio=TonightsGirlfriend" to "TonightsGirlfriend",
-		"studio=POVMasters" to "POVMasters",
-		"studio=MySistersHotFriend" to "MySistersHotFriend",
-		"studio=BangRealTeens" to "BangRealTeens",
-		"studio=MILFY" to "MILFY",
-        "studio=MrLuckyPOV" to "MrLuckyPOV",
-		"studio=HotMILFsFuck" to "HotMILFsFuck",
-		"studio=SinfulXXX" to "SinfulXXX",
-		"studio=PornMegaLoad" to "PornMegaLoad",
-		"studio=MommyBlowsBest" to "MommyBlowsBest",
+        "studio=Tushy" to "Tushy",
+        "studio=SisLovesMe" to "SisLovesMe",
+        "studio=OnlyTarts" to "OnlyTarts",
+        "studio=TouchMyWife" to "TouchMyWife",
+        "studio=FamilyTherapyXXX" to "FamilyTherapy",
+        "studio=PornFidelity" to "PornFidelity",
+        "studio=TeenFidelity" to "TeenFidelity",
+        "studio=MyLifeInMiami" to "MyLifeInMiami",
+        "studio=GangbangCreampie" to "GangbangCreampie",
+        "studio=FreeuseFantasy" to "FreeuseFantasy",
+        "studio=ExxxtraSmall" to "ExxxtraSmall",
+        "studio=SpankMonster" to "SpankMonster",
+        "studio=RealityJunkies" to "RealityJunkies",
+        "studio=RKPrime" to "RKPrime",
+        "studio=FreeuseMILF" to "FreeuseMILF",
+        "studio=MomComesFirst" to "MomComesFirst",
+        "studio=MySistersHotFriend" to "MySistersHotFriend",
         "studio=MommyBlowsBest" to "MommyBlowsBest",
-		"studio=DaughterSwap" to "DaughterSwap",
+        "studio=DaughterSwap" to "DaughterSwap",
         "studio=PornForce" to "PornForce",
-		"studio=Slayed" to "Slayed",
-        "studio=LezBeBad" to "LezBeBad",
-		"studio=HerLimit" to "HerLimit",
+        "studio=Slayed" to "Slayed",
         "studio=PublicAgent" to "PublicAgent",
-		"studio=FreakMobMedia" to "FreakMobMedia",
-        "studio=InterracialPass" to "InterracialPass",
-		"studio=TeenyTaboo" to "TeenyTaboo",
-        "studio=ProducersFun" to "ProducersFun",
-		"studio=MyBabysittersClub" to "MyBabysittersClub",
+        "studio=TeenyTaboo" to "TeenyTaboo",
+        "studio=MyBabysittersClub" to "MyBabysittersClub",
         "studio=Hunt4K" to "Hunt4K",
-		"studio=PropertySex" to "PropertySex",
+        "studio=PropertySex" to "PropertySex",
         "studio=FamilyHookups" to "FamilyHookups",
-		"studio=MilfAF" to "MilfAF",
         "studio=MomIsHorny" to "MomIsHorny",
-        "studio=ATKGirlfriends" to "ATK Girlfriends",
         "studio=Hustler" to "Hustler",
         "studio=SexMex" to "SexMex Studio",
         "studio=BrazzersExxtra" to "BrazzersExxtra Studio",
@@ -112,7 +74,7 @@ class AllPornStream : MainAPI() {
         "studio=erito" to "Erito",
         "studio=public-agent" to "Public Agent",
         "studio=cum-4-k" to "Cum (4K)",
-        )
+    )
 
     override suspend fun getMainPage(
         page: Int,
@@ -120,7 +82,8 @@ class AllPornStream : MainAPI() {
     ): HomePageResponse {
         val res = app.get("$mainUrl/api/posts?${request.data}&page=$page").parsedSafe<Posts>()?.posts
         val home = res?.map {
-            it.toSearchResult() }
+            it.toSearchResult()
+        }
         return newHomePageResponse(
             list = HomePageList(
                 name = request.name,
@@ -139,7 +102,6 @@ class AllPornStream : MainAPI() {
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }
-
     }
 
     private fun RelatedPost.toSearchResult(): SearchResponse {

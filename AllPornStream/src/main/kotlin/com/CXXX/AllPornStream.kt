@@ -20,6 +20,39 @@ class AllPornStream : MainAPI() {
     override val supportedTypes = setOf(TvType.NSFW)
 
     override val mainPage = mainPageOf(
+        "studio=ElegantAngel" to "Elegant Angel",
+        "studio=Blacked" to "Blacked",
+        "studio=DadCrush" to "Dad Crush",
+        "studio=Shoplyfter" to "Shoplyfter",
+        "studio=Tushy" to "Tushy",
+        "studio=SisLovesMe" to "SisLovesMe",
+        "studio=OnlyTarts" to "OnlyTarts",
+        "studio=TouchMyWife" to "TouchMyWife",
+        "studio=FamilyTherapyXXX" to "FamilyTherapy",
+        "studio=PornFidelity" to "PornFidelity",
+        "studio=TeenFidelity" to "TeenFidelity",
+        "studio=MyLifeInMiami" to "MyLifeInMiami",
+        "studio=GangbangCreampie" to "GangbangCreampie",
+        "studio=FreeuseFantasy" to "FreeuseFantasy",
+        "studio=ExxxtraSmall" to "ExxxtraSmall",
+        "studio=SpankMonster" to "SpankMonster",
+        "studio=RealityJunkies" to "RealityJunkies",
+        "studio=RKPrime" to "RKPrime",
+        "studio=FreeuseMILF" to "FreeuseMILF",
+        "studio=MomComesFirst" to "MomComesFirst",
+        "studio=MySistersHotFriend" to "MySistersHotFriend",
+        "studio=MommyBlowsBest" to "MommyBlowsBest",
+        "studio=DaughterSwap" to "DaughterSwap",
+        "studio=PornForce" to "PornForce",
+        "studio=Slayed" to "Slayed",
+        "studio=PublicAgent" to "PublicAgent",
+        "studio=TeenyTaboo" to "TeenyTaboo",
+        "studio=MyBabysittersClub" to "MyBabysittersClub",
+        "studio=Hunt4K" to "Hunt4K",
+        "studio=PropertySex" to "PropertySex",
+        "studio=FamilyHookups" to "FamilyHookups",
+        "studio=MomIsHorny" to "MomIsHorny",
+        "studio=Hustler" to "Hustler",
         "studio=SexMex" to "SexMex Studio",
         "studio=BrazzersExxtra" to "BrazzersExxtra Studio",
         "studio=EvilAngel" to "EvilAngel Studio",
@@ -41,7 +74,7 @@ class AllPornStream : MainAPI() {
         "studio=erito" to "Erito",
         "studio=public-agent" to "Public Agent",
         "studio=cum-4-k" to "Cum (4K)",
-        )
+    )
 
     override suspend fun getMainPage(
         page: Int,
@@ -49,7 +82,8 @@ class AllPornStream : MainAPI() {
     ): HomePageResponse {
         val res = app.get("$mainUrl/api/posts?${request.data}&page=$page").parsedSafe<Posts>()?.posts
         val home = res?.map {
-            it.toSearchResult() }
+            it.toSearchResult()
+        }
         return newHomePageResponse(
             list = HomePageList(
                 name = request.name,
@@ -68,7 +102,6 @@ class AllPornStream : MainAPI() {
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }
-
     }
 
     private fun RelatedPost.toSearchResult(): SearchResponse {

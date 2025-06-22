@@ -25,6 +25,7 @@ class actionviewphotography : MainAPI() {
         "video/web%20series" to "Web Series",
         "video/japanese" to "Japanese",
         "video/Step" to "Step category",
+        "/video/tiktok" to "TikTok",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {

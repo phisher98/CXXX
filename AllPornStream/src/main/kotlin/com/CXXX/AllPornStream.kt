@@ -11,7 +11,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 
-MainAPI() {
+class AllPornStream : MainAPI() {
     override var mainUrl = "https://allpornstream.com"
     override var name = "AllPornStream"
     override val hasMainPage = true

@@ -101,22 +101,11 @@ class CornHubProvider : MainAPI() {
         val tags = soup.select("div.categoriesWrapper a")
             .map { it?.text()?.trim().toString().replace(", ", "") }
 
-        val recommendations = soup.select("ul#recommendedVideos li.pcVideoListItem").map {
-            val rTitle = it.selectFirst("div.phimage a")?.attr("title") ?: ""
-            val rUrl = fixUrl(it.selectFirst("div.phimage a")?.attr("href").toString())
-            val rPoster = fixUrl(
-                it.selectFirst("div.phimage img.js-videoThumb")?.attr("src").toString()
-            )
-            MovieSearchResponse(
-                name = rTitle, apiName = this.name, url = rUrl, posterUrl = rPoster
-            )
-        }
-
         val actors =
             soup.select("div.video-wrapper div.video-info-row.userRow div.userInfo div.usernameWrap a")
                 .map { it.text() }
 
-        val relatedVideo = soup.select("ul#relatedVideosCenter li.pcVideoListItem").map {
+        val relatedVideo = soup.select("li.fixedSizeThumbContainer").map {
             val rTitle = it.selectFirst("div.phimage a")?.attr("title") ?: ""
             val rUrl = fixUrl(it.selectFirst("div.phimage a")?.attr("href").toString())
             val rPoster = fixUrl(
@@ -132,7 +121,7 @@ class CornHubProvider : MainAPI() {
             this.plot = title
             this.tags = tags
             addActors(actors)
-            this.recommendations = recommendations + relatedVideo
+            this.recommendations = relatedVideo
         }
     }
 

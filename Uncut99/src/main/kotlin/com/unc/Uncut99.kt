@@ -17,12 +17,8 @@ class Uncut99 : MainAPI() {
 
     override val mainPage = mainPageOf(
             "${mainUrl}/page/" to "Home",
-            "${mainUrl}/category/kooku-originals-web-series/page/" to "Kooku",
-            "${mainUrl}/category/ullu-originals-web-series/page/" to "Ullu",
-            "${mainUrl}/category/flizmovies-originals-web-series/page/" to "Fliz movies",
-            "${mainUrl}/category/uncutadda-web-series/page/" to "Uncutadda Webseries",
-            "${mainUrl}/category/hotshots-web-series/page/" to "Hotshots",
-            "${mainUrl}/category/niks-indian-porn/page/" to "Niks Indian",
+            "${mainUrl}/category/model-mms/page/" to "MMS",
+            "${mainUrl}/category/indian-amateur-porn/page/" to "Amateur"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {

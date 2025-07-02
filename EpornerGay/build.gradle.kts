@@ -1,9 +1,9 @@
-version = 11
+version = 1
 
 cloudstream {
     authors     = listOf("HindiProvider, megix")
     language    = "en"
-    description = "Eporner"
+    description = "EpornerGay"
 
     /**
      * Status int as the following:

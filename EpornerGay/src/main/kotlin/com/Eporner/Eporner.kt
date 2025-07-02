@@ -1,4 +1,4 @@
-package com.Eporner
+package com.EpornerGay
 
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
@@ -7,8 +7,8 @@ import org.json.JSONObject
 import java.math.BigInteger
 
 class Eporner : MainAPI() {
-    override var mainUrl              = "https://www.eporner.com"
-    override var name                 = "Eporner"
+    override var mainUrl              = "https://www.eporner.com/cat/gay/"
+    override var name                 = "EpornerGay"
     override val hasMainPage          = true
     override var lang                 = "en"
     override val hasDownloadSupport   = true
@@ -17,15 +17,15 @@ class Eporner : MainAPI() {
     override val vpnStatus            = VPNStatus.MightBeNeeded
 
     override val mainPage = mainPageOf(
-            "" to "Recent Videos",
-            "best-videos" to "Best Videos",
-            "top-rated" to "Top Rated",
-            "most-viewed" to "Most Viewed",
-            "cat/milf" to "Milf",
-            "cat/japanese" to "Japanese",
-            "cat/hd-1080p" to "1080 Porn",
-            "cat/4k-porn" to "4K Porn",
-            "recommendations" to "Recommendation Videos",
+            "" to "Most recent",
+            "SORT-top-rated" to "Top Rated",
+            "SORT-most-viewed" to "Most Viewed",
+            "SORT-top-weekly" to "Weekly Top",
+            "SORT-top-monthly" to "Monthly Top"
+            "SORT-longest" to "Longest",
+            "amateur" to "Amateur",
+            "anal" to "Anal",
+            "asian" to "Asian"
         )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {

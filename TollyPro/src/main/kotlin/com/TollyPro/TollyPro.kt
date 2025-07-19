@@ -17,7 +17,7 @@ import java.time.Year
 
 class TollyPro : MainAPI() {
 
-    override var mainUrl = "https://tellyhd.tv"
+    override var mainUrl = "https://tellyhd.buzz"
     override var name = "TellyHD"
     override val hasMainPage= true
     override var lang= "hi"
@@ -118,11 +118,17 @@ class TollyPro : MainAPI() {
             val episodes =
                 document.select("ul#playeroptionsul > li").map {
                     val name = it.selectFirst("span.title")?.text()
-                    val type = it.attr("data-type")
-                    val post = it.attr("data-post")
-                    val nume = it.attr("data-nume")
+                    //val type = it.attr("data-type")
+                   // val post = it.attr("data-post")
+                   // val nume = it.attr("data-nume")
+                   val iframelink= if(name?.startsWith("Dood") == true){
+                       document.select("iframe")[1].attr("src") 
+                   }else{
+                       document.select("iframe")[0].attr("src")
+                   }
                     Episode(
-                        LinkData(type, post,nume).toJson(),
+                        //LinkData(type, post,nume).toJson(),
+                        iframelink,
                         name,
                     )
                 }
@@ -140,14 +146,14 @@ class TollyPro : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-            val loadData = tryParseJson<LinkData>(data)
-            val source = app.post(
-                url = "$mainUrl/wp-admin/admin-ajax.php", data = mapOf(
-                    "action" to "doo_player_ajax", "post" to "${loadData?.post}", "nume" to "${loadData?.nume}", "type" to "${loadData?.type}"
-                ), referer = data, headers = mapOf("Accept" to "*/*", "X-Requested-With" to "XMLHttpRequest"
-                )).parsed<ResponseHash>().embed_url.getIframe()
-            if (!source.contains("youtube")) loadExtractor(
-                source,
+           // val loadData = tryParseJson<LinkData>(data)
+           // val source = app.post(
+           //     url = "$mainUrl/wp-admin/admin-ajax.php", data = mapOf(
+           //         "action" to "doo_player_ajax", "post" to "${loadData?.post}", "nume" to "${loadData?.nume}", "type" to "${loadData?.type}"
+           //     ), referer = data, headers = mapOf("Accept" to "*/*", "X-Requested-With" to "XMLHttpRequest"
+           //     )).parsed<ResponseHash>().embed_url.getIframe()
+            if (!data.contains("youtube")) loadExtractor(
+                data,
                 "$directUrl/",
                 subtitleCallback,
                 callback

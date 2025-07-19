@@ -23,6 +23,9 @@ class VidHidedht: VidhideExtractor() {
 class Vidhidehub : VidhideExtractor() {
     override var mainUrl = "https://vidhidehub.com"
 }
+class Vidhidetoul : VidhideExtractor() {
+    override var mainUrl = "https://toul.hair"
+}
 
 open class Ds2play : ExtractorApi() {
     override var name = "DoodStream"

@@ -166,7 +166,7 @@ override suspend fun load(url: String): LoadResponse? {
              this.posterUrl = poster
              this.plot = synopsis
              this.tags = tags
-             this.rating = rating
+             this.score = Score.from10(rating)
              this.recommendations = recommendations // Gán recommendations
              this.year = year
          }

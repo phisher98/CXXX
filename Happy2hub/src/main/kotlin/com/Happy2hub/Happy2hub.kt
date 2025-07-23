@@ -117,8 +117,11 @@ class Happy2hub : MainAPI() {
             }
             // Add all the links for this episode as a single Episode object
             if (episodeLinks.isNotEmpty()) {
-                episodes.add(Episode(episodeLinks.joinToString(), "Episode $epno", posterUrl = poster))
-            }
+                episodes.add(newEpisode(episodeLinks.joinToString()){
+                    this.name="Episode $epno"
+                    this.posterUrl = poster
+                })
+                }
         }
 
         // Return the response with all episodes

@@ -46,7 +46,7 @@ class NoodleMagazineProvider : MainAPI() { // all providers must be an instance 
             this.posterUrl = posterUrl
         }
     }
-
+    @Suppress("DEPRECATION")
     override suspend fun search(query: String): List<MovieSearchResponse> {
         val searchresult = mutableListOf<MovieSearchResponse>()
 
@@ -59,7 +59,7 @@ class NoodleMagazineProvider : MainAPI() { // all providers must be an instance 
 
         return searchresult
     }
-
+  @Suppress("DEPRECATION")
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title = document.selectFirst("div.l_info h1")?.text()?.trim() ?: "null"

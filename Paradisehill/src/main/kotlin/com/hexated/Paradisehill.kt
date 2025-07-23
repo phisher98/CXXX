@@ -81,7 +81,7 @@ class Paradisehill : MainAPI() {
                         .toList()
                 }
         val episodes = dataEps?.mapIndexed { index, link ->
-            Episode(link, episode = index + 1)
+            newEpisode(link){ this.name= "episode ${index + 1}"}
         } ?: throw ErrorLoadingException("No Episode Found")
 
         val recommendations =

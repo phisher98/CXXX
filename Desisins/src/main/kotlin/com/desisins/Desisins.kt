@@ -89,10 +89,11 @@ class Desisins : MainAPI() { // all providers must be an instance of MainAPI
         val document = app.get(url).document
 
         val title = document.selectFirst("h1")?.text() ?:""
+        val desc = document.selectFirst("div.g1-meta")?.text() ?:""
         //val poster = fixUrlNull(document.select("h2 > img").first()?.attr("src"))
         return newMovieLoadResponse(title, url, TvType.Movie, url) {
             this.posterUrl = ""
- 
+            this.plot = desc
         }
     }
 
@@ -102,8 +103,14 @@ class Desisins : MainAPI() { // all providers must be an instance of MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val src = app.get(data).document.select("iframe").attr("src")
-        
+        val doc = app.get(data).document
+        val docid = doc.select("a[onclick^=itm]").firstOrNull {
+            it.text().contains("LuLu", ignoreCase = true)
+        }?.attr("onclick")?.let {
+        Regex("docid=([a-zA-Z0-9]+)").find(it)?.groupValues?.get(1)
+        }
+        val src = "https://lulustream.com/e/$docid"
+
         //Log.d("link",src)
         loadExtractor(
                 src,

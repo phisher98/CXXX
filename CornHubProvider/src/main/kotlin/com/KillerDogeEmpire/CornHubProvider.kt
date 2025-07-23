@@ -50,13 +50,14 @@ class CornHubProvider : MainAPI() {
                 val title = it.selectFirst("span.title a")?.text() ?: ""
                 val link = fixUrlNull(it.selectFirst("a")?.attr("href")) ?: return@mapNotNull null
                 val img = fetchImgUrl(it.selectFirst("img"))
-                MovieSearchResponse(
+                newMovieSearchResponse(
                     name = title,
                     url = link,
-                    apiName = this.name,
                     type = globalTvType,
-                    posterUrl = img
-                )
+                    
+                ){
+                    this.posterUrl = img
+                }
             }
             if (home.isNotEmpty()) {
                 return newHomePageResponse(
@@ -83,13 +84,14 @@ class CornHubProvider : MainAPI() {
             val title = it.selectFirst("span.title a")?.text() ?: return@mapNotNull null
             val link = fixUrlNull(it.selectFirst("a")?.attr("href")) ?: return@mapNotNull null
             val image = fetchImgUrl(it.selectFirst("img"))
-            MovieSearchResponse(
+            newMovieSearchResponse(
                 name = title,
                 url = link,
-                apiName = this.name,
                 type = globalTvType,
-                posterUrl = image
-            )
+                
+            ){
+                this.posterUrl = image
+            }
         }.distinctBy { it.url }
     }
 
@@ -111,9 +113,10 @@ class CornHubProvider : MainAPI() {
             val rPoster = fixUrl(
                 it.selectFirst("div.phimage img.js-videoThumb")?.attr("src").toString()
             )
-            MovieSearchResponse(
-                name = rTitle, apiName = this.name, url = rUrl, posterUrl = rPoster
-            )
+            newMovieSearchResponse(name = rTitle, url = rUrl){
+                this.posterUrl = rPoster
+    
+            }
         }
 
         return newMovieLoadResponse(title, url, TvType.NSFW, url) {

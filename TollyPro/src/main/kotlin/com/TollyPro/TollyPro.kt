@@ -126,11 +126,11 @@ class TollyPro : MainAPI() {
                    }else{
                        document.select("iframe")[0].attr("src")
                    }
-                    Episode(
+                    newEpisode(
                         //LinkData(type, post,nume).toJson(),
-                        iframelink,
-                        name,
-                    )
+                        iframelink){
+                       this.name= name
+                    }
                 }
 
             return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {

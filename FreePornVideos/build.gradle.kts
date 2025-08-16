@@ -1,7 +1,7 @@
-version = 3
+version = 4
 
 cloudstream {
-    authors     = listOf("HindiProviders")
+    authors     = listOf("Phisher98")
     language    = "en"
     description = "Premium porn with 4K support"
 

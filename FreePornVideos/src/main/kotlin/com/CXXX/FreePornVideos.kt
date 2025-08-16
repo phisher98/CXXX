@@ -47,14 +47,14 @@ class FreePornVideos : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title      = this.select("strong.title").text()
         val href       = this.selectFirst("a")!!.attr("href")
-        val posterUrl  = this.select("a img").attr("data-src")
+        val posterUrl         = this.selectFirst("a img")!!.getImageAttr()
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }
 
     }
 
-    fun String?.createSlug(): String? {
+    private fun String?.createSlug(): String? {
         return this?.filter { it.isWhitespace() || it.isLetterOrDigit() }
             ?.trim()
             ?.replace("\\s+".toRegex(), "-")
@@ -121,15 +121,23 @@ class FreePornVideos : MainAPI() {
         }
     }
 
-    override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+    override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
         val document = app.get(data).document
-        document.select("video source").map { res ->
-            callback.invoke(
+        document.select("video source").forEach { res ->
+            val srcUrl = res.attr("src")
+            val response = app.get(srcUrl, allowRedirects = false)
+            val finalUrl = response.headers["location"] ?: srcUrl
+            callback(
                 newExtractorLink(
                     source = "FPV",
                     name = "FPV",
-                    url = res.attr("src"),
-                    type = ExtractorLinkType.M3U8
+                    url = finalUrl,
+                    INFER_TYPE
                 ) {
                     this.referer = data
                     this.quality = getQualityFromName(res.attr("label"))
@@ -138,5 +146,14 @@ class FreePornVideos : MainAPI() {
         }
 
         return true
+    }
+}
+
+private fun Element.getImageAttr(): String {
+    return when {
+        this.hasAttr("data-src") -> this.attr("abs:data-src")
+        this.hasAttr("data-lazy-src") -> this.attr("abs:data-lazy-src")
+        this.hasAttr("srcset") -> this.attr("abs:srcset").substringBefore(" ")
+        else -> this.attr("abs:src")
     }
 }

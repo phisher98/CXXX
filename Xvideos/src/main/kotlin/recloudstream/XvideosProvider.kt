@@ -11,7 +11,7 @@ import org.jsoup.nodes.Element
 
 class XvideosProvider : MainAPI() {
     override var mainUrl = "https://www.xvv1deos.com"
-    override var name = "Xvideo"
+    override var name = "XVideos"
     override val hasMainPage = true
     override var lang = "en"
     override val supportedTypes = setOf(
@@ -218,18 +218,18 @@ class XvideosProvider : MainAPI() {
         val document = app.get(data).document
         val scripts = document.select("script") // Lấy tất cả các thẻ script
         var linksFound = false
-
+        val quality=document.select("div.video-hd-mark").text()
         // Biến tạm để lưu các URL tìm được
         var foundHlsUrl: String? = null
 
-        val videoHlsRegex = Regex("""html5player\.setVideoHLS\s*\(\s*['"](.*?)['"]\s*\)""")
+        val videoHlsRegex = Regex("""['"]https?://[^\s'"]+\.(mp4|mkv|m3u8)[^'"]*['"]""")
 
         // Bước 1: Trích xuất tất cả các URL có thể có
         scripts.forEach { script ->
             val scriptContent = script.html()
 
-            if (foundHlsUrl == null) { // Chỉ lấy link HLS đầu tiên tìm thấy
-                videoHlsRegex.find(scriptContent)?.groupValues?.get(1)?.takeIf { it.isNotBlank() }?.let {
+            if (foundHlsUrl == null) {
+                videoHlsRegex.find(scriptContent)?.value?.trim('"', '\'')?.let {
                     foundHlsUrl = it
                 }
             }
@@ -238,15 +238,15 @@ class XvideosProvider : MainAPI() {
         // Bước 2: Thêm các link vào callback theo thứ tự ưu tiên: HLS -> High MP4 -> Low MP4
         foundHlsUrl?.let { url ->
             callback(
-                ExtractorLink(
-                    source = this.name,
-                    name = "${this.name}",
-                    url = url,
-                    referer = data,
-                    quality = Qualities.Unknown.value, // HLS thường tự điều chỉnh chất lượng
-                    type = ExtractorLinkType.M3U8,
-                    headers = mapOf("Referer" to data)
+                newExtractorLink(
+                    this.name,
+                    this.name,
+                    url
                 )
+                {
+                    this.referer=data
+                    this.quality=getQualityFromName(quality)
+                }
             )
             linksFound = true
         }

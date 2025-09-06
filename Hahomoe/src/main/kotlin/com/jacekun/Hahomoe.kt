@@ -4,11 +4,11 @@ import android.annotation.SuppressLint
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.utils.newExtractorLink
+import okhttp3.*
 import java.text.SimpleDateFormat
 import java.util.*
-import khttp.structures.cookie.CookieJar
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 
@@ -16,9 +16,6 @@ import org.jsoup.nodes.Document
 
 class Hahomoe : MainAPI() {
     companion object {
-        var token: String? = null
-        var cookie: CookieJar? = null
-
         fun getType(t: String): TvType {
             return TvType.NSFW
             /*
@@ -33,18 +30,6 @@ class Hahomoe : MainAPI() {
     override val hasQuickSearch = false
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.NSFW)
-
-    private fun loadToken(): Boolean {
-        return try {
-            val response = khttp.get(mainUrl)
-            cookie = response.cookies
-            val document = Jsoup.parse(response.text)
-            token = document.selectFirst("""meta[name="csrf-token"]""")?.attr("content")
-            token != null
-        } catch (e: Exception) {
-            false
-        }
-    }
 
     override suspend fun getMainPage(
         page: Int,
@@ -263,7 +248,6 @@ class Hahomoe : MainAPI() {
     ): Boolean {
         val soup = app.get(data).document
 
-        val sources = ArrayList<ExtractorLink>()
         for (source in soup.select("""[aria-labelledby="mirror-dropdown"] > li > a.dropdown-item""")) {
             val release = source.text().replace("/", "").trim()
             val sourceSoup = app.get(
@@ -272,20 +256,21 @@ class Hahomoe : MainAPI() {
             ).document
 
             for (quality in sourceSoup.select("video#player > source")) {
-                sources.add(
-                    ExtractorLink(
-                        this.name,
-                        "${this.name} $release - " + quality.attr("title"),
-                        fixUrl(quality.attr("src")),
-                        this.mainUrl,
-                        getQualityFromName(quality.attr("title"))
+                try {
+                    callback.invoke(
+                        newExtractorLink(
+                            source = this.name,
+                            name = "${this.name} $release - " + quality.attr("title"),
+                            url = fixUrl(quality.attr("src")),
+                        ).apply {
+                            this.quality = getQualityFromName(quality.attr("title"))
+                            this.referer = mainUrl
+                        }
                     )
-                )
+                } catch (e: Exception) {
+                    logError(e)
+                }
             }
-        }
-
-        for (source in sources) {
-            callback.invoke(source)
         }
         return true
     }

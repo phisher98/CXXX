@@ -9,7 +9,9 @@ import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.lagradost.nicehttp.NiceResponse
 
 class Vlxx : MainAPI() {
@@ -145,16 +147,22 @@ class Vlxx : MainAPI() {
         json?.let {
             tryParseJson<List<Sources?>>(it)?.forEach { vidlink ->
                 vidlink?.file?.let { file ->
-                    callback.invoke(
-                        ExtractorLink(
-                            source = file,
-                            name = this.name,
-                            url = file,
-                            referer = data,
-                            quality = getQualityFromName(vidlink.label),
-                            isM3u8 = file.endsWith("m3u8")
+                    val extractorLinkType = if (file.endsWith("m3u8")) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
+                    try {
+                        callback.invoke(
+                            newExtractorLink(
+                                source = file,
+                                name = this.name,
+                                url = file,
+                                type = extractorLinkType
+                            ).apply {
+                                this.referer = data
+                                this.quality = getQualityFromName(vidlink.label)
+                            }
                         )
-                    )
+                    } catch (e: Exception) {
+                        logError(e)
+                    }
                 }
             }
         }

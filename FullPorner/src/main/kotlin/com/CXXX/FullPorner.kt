@@ -4,6 +4,7 @@ import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
+import com.lagradost.cloudstream3.mvvm.logError
 
 class FullPorner : MainAPI() {
     override var mainUrl              = "https://fullporner.com"
@@ -97,39 +98,43 @@ class FullPorner : MainAPI() {
 }
 
     override suspend fun loadLinks(
-    data: String,
-    isCasting: Boolean,
-    subtitleCallback: (SubtitleFile) -> Unit,
-    callback: (ExtractorLink) -> Unit
-): Boolean {
-    val document = app.get(data).document
-    val iframeUrl = fixUrlNull(document.selectFirst("div.video-block div.single-video-left div.single-video iframe")?.attr("src")) ?: ""
-    val extlinkList = mutableListOf<ExtractorLink>()
-    val iframeDocument = app.get(iframeUrl).document
-    val videoID = Regex("""var id = \"(.+?)\"""").find(iframeDocument.html())?.groupValues?.getOrNull(1)
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        val document = app.get(data).document
+        val iframeUrl = fixUrlNull(document.selectFirst("div.video-block div.single-video-left div.single-video iframe")?.attr("src")) ?: ""
+        val iframeDocument = app.get(iframeUrl).document
+        val videoID = Regex("""var id = \"(.+?)\"""").find(iframeDocument.html())?.groupValues?.getOrNull(1)
 
-    if (videoID != null) {
-        val pornTrexDocument = app.get("https://www.porntrex.com/embed/$videoID").document
-        val videoUrlsRegex = Regex("""(?:video_url|video_alt_url2|video_alt_url3): \'(.+?)\',""")
-        val matchResults = videoUrlsRegex.findAll(pornTrexDocument.html())
+        if (videoID != null) {
+            val pornTrexDocument = app.get("https://www.porntrex.com/embed/$videoID").document
+            val videoUrlsRegex = Regex("""(?:video_url|video_alt_url2|video_alt_url3): \'(.+?)\',""")
+            val matchResults = videoUrlsRegex.findAll(pornTrexDocument.html())
 
-        val videoUrls = matchResults.map { it.groupValues[1] }.toList()
+            val videoUrls = matchResults.map { it.groupValues[1] }.toList()
 
-        videoUrls.forEach { videoUrl ->
-            extlinkList.add(
-                ExtractorLink(
-                    name,
-                    name,
-                    videoUrl,
-                    referer = "",
-                    quality = Regex("""_(1080|720|480|360)p\.mp4""").find(videoUrl)?.groupValues?.getOrNull(1)?.toIntOrNull() ?: Qualities.Unknown.value,
-                )
-            )
+            videoUrls.forEach { videoUrl ->
+                try {
+                    callback.invoke(
+                        newExtractorLink(
+                            name,
+                            name,
+                            videoUrl,
+                        ).apply {
+                            this.quality =
+                                Regex("""_(1080|720|480|360)p\.mp4""").find(videoUrl)?.groupValues?.getOrNull(
+                                    1
+                                )?.toIntOrNull() ?: Qualities.Unknown.value
+                        }
+                    )
+                }
+                catch (e: Exception) {
+                    logError(e)
+                }
+            }
         }
+        return true
     }
-    extlinkList.forEach(callback)
-
-    return true
-    }
-
 }

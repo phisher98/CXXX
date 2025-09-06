@@ -3,6 +3,7 @@ package com.Chatrubate
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.*
 
 class ChatrubateProvider : MainAPI() {
@@ -97,16 +98,19 @@ class ChatrubateProvider : MainAPI() {
         val script = doc.select("script").find { item-> item.html().contains("window.initialRoomDossier") }
         val json = script!!.html().substringAfter("window.initialRoomDossier = \"").substringBefore(";").unescapeUnicode()
         val m3u8Url = "\"hls_source\": \"(.*).m3u8\"".toRegex().find(json)?.groups?.get(1)?.value
-        callback.invoke(
-            ExtractorLink(
-                source = name,
-                name = name,
-                url = m3u8Url.toString()+".m3u8",
-                referer = "",
-                Qualities.Unknown.value,
-                isM3u8 = true
+        try {
+            callback.invoke(
+                newExtractorLink(
+                    source = name,
+                    name = name,
+                    url = m3u8Url.toString()+".m3u8",
+                    type = ExtractorLinkType.M3U8
+                )
             )
-        )
+        } catch (e: Exception) {
+            logError(e)
+        }
+
 
         return true
     }

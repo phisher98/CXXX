@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SearchQuality
+import com.lagradost.cloudstream3.mvvm.logError
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlin.random.Random
@@ -343,17 +344,21 @@ class XnxxProvider : MainAPI() {
         if (data.startsWith("hls:")) {
             val videoStreamUrl = data.substringAfter("hls:")
             if (videoStreamUrl.isNotBlank()) {
-                callback.invoke(
-                    ExtractorLink(
-                        source = this.name,
-                        name = "XNXX",
-                        url = videoStreamUrl,
-                        referer = "", 
-                        quality = getQualityIntFromLinkType("hls"),
-                        type = ExtractorLinkType.M3U8, 
+                try {
+                    callback.invoke(
+                        newExtractorLink(
+                            source = this.name,
+                            name = this.name,
+                            url = videoStreamUrl,
+                            type = ExtractorLinkType.M3U8,
+                        ).apply {
+                            this.quality = getQualityIntFromLinkType("hls")
+                        }
                     )
-                )
-                hasAddedLink = true
+                    hasAddedLink = true
+                } catch (e: Exception) {
+                    logError(e)
+                }
             }
         }
         return hasAddedLink

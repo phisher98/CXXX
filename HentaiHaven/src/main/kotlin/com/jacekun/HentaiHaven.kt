@@ -5,7 +5,9 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.jsoup.select.Elements
 
 class HentaiHaven : MainAPI() {
@@ -152,16 +154,21 @@ class HentaiHaven : MainAPI() {
                             val m3srcFile = m3src.src ?: return@map null
                             val label = m3src.label ?: ""
                             Log.i(name, "M3u8 link: $m3srcFile")
-                            callback.invoke(
-                                ExtractorLink(
-                                    name = "$name m3u8",
-                                    source = "$name m3u8",
-                                    url = m3srcFile,
-                                    referer = "$mainUrl/",
-                                    quality = getQualityFromName(label),
-                                    isM3u8 = true
+                            try {
+                                callback.invoke(
+                                    newExtractorLink(
+                                        name = "$name m3u8",
+                                        source = "$name m3u8",
+                                        url = m3srcFile,
+                                        type = ExtractorLinkType.M3U8
+                                    ).apply {
+                                        this.referer = "$mainUrl/"
+                                        this.quality = getQualityFromName(label)
+                                    }
                                 )
-                            )
+                            } catch (e: Exception) {
+                                logError(e)
+                            }
                         }
                     }
                 }

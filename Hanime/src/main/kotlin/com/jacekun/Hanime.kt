@@ -9,8 +9,11 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
@@ -281,26 +284,26 @@ class Hanime : MainAPI() {
         val res = app.get(data).text
         val response = tryParseJson<HanimeEpisodeData>(res)
 
-        val streams = ArrayList<ExtractorLink>()
-
         response?.videosManifest?.servers?.map { server ->
             server.streams.forEach {
                 if (it.url.isNotEmpty()) {
-                    streams.add(
-                        ExtractorLink(
-                            source ="Hanime",
-                            name ="Hanime - ${server.name} - ${it.filesizeMbs}mb",
-                            url = it.url,
-                            referer = "",
-                            quality = getQualityFromName(it.height),
-                            isM3u8 = true
-                        ))
+                    try {
+                        callback.invoke(
+                            newExtractorLink(
+                                source = "Hanime",
+                                name = "Hanime - ${server.name} - ${it.filesizeMbs}mb",
+                                url = it.url,
+                                type = ExtractorLinkType.M3U8
+                            ).apply {
+                                this.quality = getQualityFromName(it.height)
+                            }
+                        )
+                    }
+                    catch (e: Exception) {
+                        logError(e)
+                    }
                 }
             }
-        }
-
-        streams.forEach {
-            callback(it)
         }
         return true
     }

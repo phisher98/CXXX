@@ -3,9 +3,11 @@ package com.Rowdycado
 import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.SubtitleHelper
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -100,17 +102,17 @@ class HentaiPro : MainAPI() {
         val sourceurl = extractsource(playerurl) ?:""
         val subtitle = extractsubtitles(playerurl) ?:""
 
-        callback.invoke(
-        ExtractorLink(
-            source = this.name,
-            name = this.name,
-            url = sourceurl,
-            referer = "",
-            quality = Qualities.Unknown.value,
-            isM3u8 = false
-        )
-
-        )
+        try {
+            callback.invoke(
+                newExtractorLink(
+                    source = this.name,
+                    name = this.name,
+                    url = sourceurl,
+                )
+            )
+        } catch (e: Exception) {
+            logError(e)
+        }
         subtitleCallback.invoke(
             SubtitleFile(
                 "eng",

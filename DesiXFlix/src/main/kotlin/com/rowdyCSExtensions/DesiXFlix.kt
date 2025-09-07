@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Document
 
@@ -80,8 +81,19 @@ class DesiXFlix(val plugin: DesiXFlixPlugin) :
                 D0000dExtractor().getUrl(data, data)?.forEach { link -> callback.invoke(link) }
             }
             data.contains("hotxseries") -> {
-                var serverName = "HotxSeries"
-                callback.invoke(ExtractorLink(serverName, serverName, data, "", 0))
+                val serverName = "HotxSeries"
+                try {
+                    callback.invoke(
+                        newExtractorLink(
+                            source = serverName,
+                            name = serverName,
+                            url = data,
+                        )
+                    )
+                } catch (e: Exception) {
+                    logError(e)
+                }
+
             }
             else -> loadExtractor(data, subtitleCallback, callback)
         }

@@ -49,15 +49,16 @@ class JavMost : MainAPI() {
                 ?.substring(0, 20)?.replace("Release", "")?.trim()
                 ?.substring(0, 4)?.toIntOrNull()
 
-            MovieSearchResponse(
-                name,
-                link,
-                this.name,
-                globaltvType,
-                image,
-                year,
-                null,
-            )
+            newMovieSearchResponse(
+                name = name,
+                url = link,
+                type = globaltvType,
+            ).apply {
+                //this.apiName = this@JavMost.name
+                this.posterUrl = image
+                this.year = year
+                this.id = null
+            }
         }
 
         all.add(
@@ -66,14 +67,14 @@ class JavMost : MainAPI() {
             )
         )
 
-        return HomePageResponse(all)
+        return newHomePageResponse(all)
     }
 
     override suspend fun search(query: String): List<SearchResponse>? {
         val document = app.get("$mainUrl/search/${query}/").document
         val mainbody = document.getElementsByTag("body")
-            ?.select("div#page-container > div#content > div#content-update > div")
-            ?.select("div.col-md-4.col-sm-6")
+            .select("div#page-container > div#content > div#content-update > div")
+            .select("div.col-md-4.col-sm-6")
         //Log.i(DEV, "Result => $document")
         if (mainbody != null) {
             return mainbody.map {
@@ -99,29 +100,30 @@ class JavMost : MainAPI() {
                 val yearP = content?.select("div.card-block")?.firstOrNull()?.select("p")
                 //Log.i(DEV, "Result => (yearP) ${yearP}")
                 val yearElem = when(yearP != null) {
-                    true -> yearP?.filter { yearit -> yearit.text()?.contains("Release") == true }
+                    true -> yearP.filter { yearit -> yearit.text().contains("Release") == true }
                     false -> null
                 }
                 val yearString = when (yearElem?.size!! > 0) {
-                    true -> yearElem?.get(0)?.text()?.substring(0, 22)?.trim()
+                    true -> yearElem.get(0)?.text()?.substring(0, 22)?.trim()
                         ?.replace("Release", "")?.trim()
                     false -> null
                 }
                 //Log.i(DEV, "Result => (yearString) ${yearString}")
                 if (yearString != null)  {
                     val maxSize = if (yearString.length > 4) { 4 } else { yearString.length }
-                    year = yearString?.substring(0, maxSize)?.toIntOrNull()
+                    year = yearString.substring(0, maxSize).toIntOrNull()
                 }
                 //Log.i(DEV, "Result => (year) ${year}")
 
-                MovieSearchResponse(
-                    title,
-                    href,
-                    this.name,
-                    globaltvType,
-                    image,
-                    year
-                )
+                newMovieSearchResponse(
+                    name = title,
+                    url = href,
+                    type = globaltvType,
+                ).apply {
+                    //this.apiName = this@JavMost.name
+                    this.posterUrl = image
+                    this.year = year
+                }
             }
         }
         return null
@@ -133,24 +135,25 @@ class JavMost : MainAPI() {
         val body = document.getElementsByTag("head")
 
         //Log.i(DEV, "Result => ${body}")
-        var poster = body?.select("meta[property=og:image]")?.firstOrNull()?.attr("content")
+        var poster = body.select("meta[property=og:image]").firstOrNull()?.attr("content")
         if (poster != null) { poster = fixUrl(poster) }
         //Log.i(DEV, "Result (image) => ${poster}")
-        val title = body?.select("meta[property=og:title]")?.firstOrNull()?.attr("content") ?: "<No Title>"
-        val descript = body?.select("meta[property=og:description]")?.firstOrNull()?.attr("content") ?: "<No Synopsis found>"
+        val title = body.select("meta[property=og:title]").firstOrNull()?.attr("content") ?: "<No Title>"
+        val descript = body.select("meta[property=og:description]").firstOrNull()?.attr("content") ?: "<No Synopsis found>"
         //Log.i(DEV, "Result => ${descript}")
         val streamUrl = ""
         val year = null
-        return MovieLoadResponse(
+        return newMovieLoadResponse(
             name = title,
             url = url,
-            apiName = this.name,
             type = globaltvType,
             dataUrl = streamUrl,
-            posterUrl = poster,
-            year = year,
-            plot = descript,
-            comingSoon = true
-        )
+        ).apply {
+            this.apiName = this@JavMost.name
+            this.posterUrl = poster
+            this.year = year
+            this.plot = descript
+            this.comingSoon = true
+        }
     }
 }

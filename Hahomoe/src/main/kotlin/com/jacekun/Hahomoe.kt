@@ -6,7 +6,6 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.newExtractorLink
-import okhttp3.*
 import java.text.SimpleDateFormat
 import java.util.*
 import org.jsoup.Jsoup
@@ -46,14 +45,14 @@ class Hahomoe : MainAPI() {
                             top.select("li > a").mapNotNull {
                                 val epTitle = it.selectFirst(".thumb-title")?.text() ?: ""
                                 val url = fixUrlNull(it?.attr("href")) ?: return@mapNotNull null
-                                AnimeSearchResponse(
+                                newAnimeSearchResponse(
                                     name = epTitle,
                                     url = url,
-                                    apiName = this.name,
                                     type = globalTvType,
-                                    posterUrl = it.selectFirst("img")?.attr("src"),
-                                    dubStatus = EnumSet.of(DubStatus.Subbed),
-                                )
+                                ).apply {
+                                    posterUrl = it.selectFirst("img")?.attr("src")
+                                    dubStatus = EnumSet.of(DubStatus.Subbed)
+                                }
                             }
                         items.add(HomePageList(title, anime))
                     }
@@ -63,14 +62,14 @@ class Hahomoe : MainAPI() {
                         section.select("li > a").mapNotNull {
                             val epTitle = it.selectFirst(".thumb-title")?.text() ?: ""
                             val url = fixUrlNull(it?.attr("href")) ?: return@mapNotNull null
-                            AnimeSearchResponse(
+                            newAnimeSearchResponse(
                                 name = epTitle,
                                 url = url,
-                                apiName = this.name,
                                 type = globalTvType,
-                                posterUrl = it.selectFirst("img")?.attr("src"),
-                                dubStatus = EnumSet.of(DubStatus.Subbed),
-                            )
+                            ).apply {
+                                this.posterUrl = it.selectFirst("img")?.attr("src")
+                                this.dubStatus = EnumSet.of(DubStatus.Subbed)
+                            }
                         }
                     items.add(HomePageList(title, anime))
                 }
@@ -80,7 +79,7 @@ class Hahomoe : MainAPI() {
             }
         }
         if (items.size <= 0) throw ErrorLoadingException()
-        return HomePageResponse(items)
+        return newHomePageResponse(items)
     }
 
     private fun getIsMovie(type: String, id: Boolean = false): Boolean {
@@ -102,21 +101,22 @@ class Hahomoe : MainAPI() {
             if (href.isNotBlank()) {
                 returnValue.add(
                     if (getIsMovie(href, true)) {
-                        MovieSearchResponse(
+                        newMovieSearchResponse(
                             name = title,
                             url = href,
-                            apiName = this.name,
                             type = globalTvType,
-                        )
+                        ).apply {
+                            this.posterUrl = img
+                        }
                     } else {
-                        AnimeSearchResponse(
+                        newAnimeSearchResponse(
                             name = title,
                             url = href,
-                            apiName = this.name,
                             type = globalTvType,
-                            posterUrl = img,
-                            dubStatus = EnumSet.of(DubStatus.Subbed),
-                        )
+                        ).apply {
+                            this.posterUrl = img
+                            this.dubStatus = EnumSet.of(DubStatus.Subbed)
+                        }
                     }
                 )
             }
@@ -188,12 +188,14 @@ class Hahomoe : MainAPI() {
 
         val episodes = episodeNodes.mapNotNull {
             val dataUrl = it?.attr("href") ?: return@mapNotNull null
-            val epi = Episode(
-                data = dataUrl,
-                name = it.selectFirst(".episode-title")?.text()?.trim(),
-                posterUrl = it.selectFirst("img")?.attr("src"),
-                description = it.attr("data-content").trim(),
-            )
+            val epi = newEpisode(
+                url = dataUrl,
+            ).apply {
+                this.data = dataUrl
+                this.name = it.selectFirst(".episode-title")?.text()?.trim()
+                this.posterUrl = it.selectFirst("img")?.attr("src")
+                this.description = it.attr("data-content").trim()
+            }
             epi.addDate(it.selectFirst(".episode-date")?.text()?.trim())
             epi
         }
@@ -221,23 +223,24 @@ class Hahomoe : MainAPI() {
                 it?.text()?.trim().toString()
             }
 
-        return AnimeLoadResponse(
-            englishTitle,
-            japaneseTitle,
-            canonicalTitle ?: "",
-            url,
-            this.name,
-            getType(type ?: ""),
-            poster,
-            year.toIntOrNull(),
-            hashMapOf(DubStatus.Subbed to episodes),
-            status,
-            synopsis,
-            ArrayList(genre),
-            ArrayList(synonyms),
-            null,
-            null,
-        )
+        return newAnimeLoadResponse(
+            name = canonicalTitle ?: "",
+            url = url,
+            type = getType(type ?: ""),
+        ).apply {
+            this.engName = englishTitle
+            this.japName = japaneseTitle
+            this.apiName = this@Hahomoe.name
+            this.posterUrl = poster
+            this.episodes = hashMapOf(DubStatus.Subbed to episodes)
+            this.showStatus = status
+            this.plot = synopsis
+            this.tags = ArrayList(genre)
+            this.synonyms = ArrayList(synonyms)
+            this.rating = null
+            this.duration = null
+            this.year = year.toIntOrNull()
+        }
     }
 
     override suspend fun loadLinks(

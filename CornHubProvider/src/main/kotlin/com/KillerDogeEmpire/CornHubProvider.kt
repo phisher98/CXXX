@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.newExtractorLink
@@ -140,7 +141,7 @@ class CornHubProvider : MainAPI() {
         val document = request.document
         val mediaDefinitions = JSONObject(
             document.selectXpath("//script[contains(text(),'flashvars')]").first()?.data()
-                ?.substringAfter("=")?.substringBefore(";")
+                ?.substringAfter("=")?.substringBefore(";") ?: ""
         ).getJSONArray("mediaDefinitions")
 
         for (i in 0 until mediaDefinitions.length()) {
@@ -152,17 +153,17 @@ class CornHubProvider : MainAPI() {
                     M3u8Helper.M3u8Stream(
                         videoUrl
                     ), true
-                ).apmap { stream ->
+                ).amap { stream ->
                     extlinkList.add(
                         newExtractorLink(
                             source = name,
-                            name = "${this.name}",
+                            name = "${name}",
                             url = stream.streamUrl,
                             type = ExtractorLinkType.M3U8,
                         ) {
                             this.quality = Regex("(\\d+)").find(quality ?: "")?.groupValues?.get(1)
-                            .let { getQualityFromName(it) }
-                            this.referer = mainUrl
+                                .let { getQualityFromName(it) }
+                            referer = mainUrl
                         }
                     )
                 }

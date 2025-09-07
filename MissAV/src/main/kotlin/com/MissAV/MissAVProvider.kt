@@ -48,7 +48,7 @@ class MissAVProvider : MainAPI() {
 
         val searchResponse = mutableListOf<SearchResponse>()
 
-        for (i in 1..10) {
+        for (i in 1..7) {
             val document = app.get("$mainUrl/en/search/$query?page=$i").document
             //val document = app.get("${mainUrl}/page/$i/?s=$query").document
 

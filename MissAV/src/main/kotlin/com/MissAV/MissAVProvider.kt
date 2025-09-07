@@ -1,6 +1,5 @@
 package com.MissAv
 
-import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -117,7 +116,6 @@ class MissAVProvider : MainAPI() {
 
         try {
             val title = doc.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString()
-            Log.d("salman731 title",title)
             val javCode = "([a-zA-Z]+-\\d+)".toRegex().find(title)?.groups?.get(1)?.value
             if(!javCode.isNullOrEmpty())
             {

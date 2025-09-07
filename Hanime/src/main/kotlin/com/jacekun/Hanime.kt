@@ -114,15 +114,16 @@ class Hanime : MainAPI() {
                     val title = getTitle(hentai.name)
                     if (!titles.contains(title)) {
                         titles.add(title)
-                        AnimeSearchResponse(
-                            title,
-                            "https://hanime.tv/videos/hentai/${hentai.slug}?id=${hentai.id}&title=${title}",
-                            this.name,
-                            globalTvType,
-                            hentai.coverUrl,
-                            null,
-                            EnumSet.of(DubStatus.Subbed),
-                        )
+                        newAnimeSearchResponse(
+                            name = title,
+                            url = "https://hanime.tv/videos/hentai/${hentai.slug}?id=${hentai.id}&title=${title}",
+                            type = globalTvType,
+                        ).apply {
+                            //this.apiName = this@Hanime.name
+                            this.posterUrl = hentai.coverUrl
+                            this.year = null
+                            this.dubStatus = EnumSet.of(DubStatus.Subbed)
+                        }
                     } else {
                         null
                     }
@@ -131,7 +132,7 @@ class Hanime : MainAPI() {
         }
 
         if (items.size <= 0) throw ErrorLoadingException()
-        return HomePageResponse(items)
+        return newHomePageResponse(items)
     }
 
     data class HanimeSearchResult (
@@ -179,16 +180,17 @@ class Hanime : MainAPI() {
             if (!titles.contains(title)) {
                 titles.add(title)
                 searchResults.add(
-                    AnimeSearchResponse(
-                        title,
-                        "https://hanime.tv/videos/hentai/${it.slug}?id=${it.id}&title=${title}",
-                        this.name,
-                        globalTvType,
-                        it.coverUrl,
-                        unixToYear(it.releasedAt),
-                        EnumSet.of(DubStatus.Subbed),
-                        it.titles?.get(0),
-                    )
+                    newAnimeSearchResponse(
+                        name = title,
+                        url = "https://hanime.tv/videos/hentai/${it.slug}?id=${it.id}&title=${title}",
+                        type = globalTvType,
+                    ).apply {
+                        //this.apiName = this@Hanime.name
+                        this.posterUrl = it.coverUrl
+                        this.year = unixToYear(it.releasedAt)
+                        this.dubStatus = EnumSet.of(DubStatus.Subbed)
+                        this.otherName = it.titles?.get(0)
+                    }
                 )
             }
         }
@@ -252,27 +254,30 @@ class Hanime : MainAPI() {
         val tags = data.hentaiTags.map { it.text }
 
         val episodes = data.hentaiFranchiseHentaiVideos.map {
-            Episode(
-                data = "$mainUrl/api/v8/video?id=${it.id}&",
-                name = it.name,
-                posterUrl = it.posterUrl
-            )
+            newEpisode(
+                url = "$mainUrl/api/v8/video?id=${it.id}&",
+            ).apply {
+                this.data = "$mainUrl/api/v8/video?id=${it.id}&"
+                this.name = it.name
+                this.posterUrl = it.posterUrl
+            }
         }
 
-        return AnimeLoadResponse(
-            title,
-            null,
-            title,
-            url,
-            this.name,
-            globalTvType,
-            data.hentaiVideo.coverUrl,
-            unixToYear(data.hentaiVideo.releasedAtUnix),
-            hashMapOf(DubStatus.Subbed to episodes),
-            null,
-            data.hentaiVideo.description.replace(Regex("</?p>"), ""),
-            tags,
-        )
+        return newAnimeLoadResponse(
+            name = title,
+            url = url,
+            type = globalTvType,
+        ).apply {
+            this.engName = title
+            this.japName = null
+            this.apiName = this@Hanime.name
+            this.posterUrl = data.hentaiVideo.coverUrl
+            this.year = unixToYear(data.hentaiVideo.releasedAtUnix)
+            this.episodes = hashMapOf(DubStatus.Subbed to episodes)
+            this.showStatus = null
+            this.plot = data.hentaiVideo.description.replace(Regex("</?p>"), "")
+            this.tags = tags
+        }
     }
 
     override suspend fun loadLinks(

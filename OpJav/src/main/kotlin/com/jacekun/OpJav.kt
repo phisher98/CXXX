@@ -2,6 +2,7 @@ package com.jacekun
 
 import android.util.Log
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.XStreamCdn
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
@@ -33,7 +34,7 @@ class OpJav : MainAPI() {
         val selectorSimple = "div.list-film-simple > div.item"
         val selectorRows = "div.list-film.row > div"
 
-        body?.select("div.content")?.forEach {
+        body.select("div.content").forEach {
             if (it != null) {
                 if (it.select(selectorRows).isNullOrEmpty()) {
                     rows.add(Pair(selectorSimple, it))
@@ -68,17 +69,18 @@ class OpJav : MainAPI() {
                     val poster = inner.select("a.poster") ?: return@mapNotNull null
                     link = fixUrlNull(poster.attr("href")) ?: return@mapNotNull null
                     name = it.text().trim().removePrefix("HD")
-                    image = poster.select("img")?.attr("src")
-                    year = inner.select("dfn")?.get(1)?.text()?.toIntOrNull()
+                    image = poster.select("img").attr("src")
+                    year = inner.select("dfn").get(1)?.text()?.toIntOrNull()
                 }
-                MovieSearchResponse(
+                newMovieSearchResponse(
                     name = name,
                     url = link,
-                    apiName = this.name,
                     type = globalTvType,
-                    posterUrl = image,
-                    year = year
-                )
+                ).apply {
+                    //this.apiName = this@OpJav.name
+                    this.posterUrl = image
+                    this.year = year
+                }
             }.distinctBy { a -> a.url }
             if (elements.isNotEmpty()) {
                 all.add(
@@ -89,7 +91,7 @@ class OpJav : MainAPI() {
                 )
             }
         }
-        return HomePageResponse(all)
+        return newHomePageResponse(all)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
@@ -109,14 +111,15 @@ class OpJav : MainAPI() {
             val year = inner.select("dfn").last()?.text()?.trim()?.toIntOrNull()
 
             //Log.i(this.name, "Result => $")
-            MovieSearchResponse(
+            newMovieSearchResponse(
                 name = title,
                 url = link,
-                apiName = this.name,
                 type = globalTvType,
-                posterUrl = image,
-                year = year
-            )
+            ).apply {
+                //this.apiName = this@OpJav.name
+                this.posterUrl = image
+                this.year = year
+            }
         }.distinctBy { it.url }
     }
 
@@ -135,7 +138,7 @@ class OpJav : MainAPI() {
 
         //Fetch server links
         val watchlink = ArrayList<String>()
-        val mainLink = doc.select("div.buttons.row a").attr("href") ?: ""
+        val mainLink = doc.select("div.buttons.row a").attr("href")
         //Log.i(this.name, "Result => (mainLink) $mainLink")
 
         //Fetch episode links from mainlink
@@ -158,11 +161,11 @@ class OpJav : MainAPI() {
         } catch (e: Exception) { }*/
                 //Fetch server links
                 epsDoc.select("div.block.servers li").mapNotNull {
-                    val inner = it?.selectFirst("a") ?: return@mapNotNull null
-                    val linkUrl = inner.attr("href") ?: return@mapNotNull null
-                    val linkId = inner.attr("id") ?: return@mapNotNull null
-                    Pair(linkUrl, linkId)
-                }.apmap {
+                                val inner = it?.selectFirst("a") ?: return@mapNotNull null
+                                val linkUrl = inner.attr("href")
+                                val linkId = inner.attr("id")
+                                Pair(linkUrl, linkId)
+                            }.amap {
                     //First = Url, Second = EpisodeID
                     //Log.i(this.name, "Result => (eplink-Id) $it")
                     val ajaxHead = mapOf(
@@ -179,28 +182,29 @@ class OpJav : MainAPI() {
                     )
                     app.post("$mainUrl/ajax", headers = ajaxHead, data = ajaxData)
                         .document.select("iframe").forEach { iframe ->
-                        val serverLink = iframe?.attr("src")?.trim().orEmpty()
-                        if (serverLink.isNotBlank()) {
-                            watchlink.add(serverLink)
-                            Log.i(this.name, "Result => (serverLink) $serverLink")
+                            val serverLink = iframe?.attr("src")?.trim().orEmpty()
+                            if (serverLink.isNotBlank()) {
+                                watchlink.add(serverLink)
+                                Log.i(name, "Result => (serverLink) $serverLink")
+                            }
                         }
-                    }
                 }
             }
         }
         val streamUrl = watchlink.distinct().toJson()
         Log.i(this.name, "Result => (streamUrl) $streamUrl")
-        return MovieLoadResponse(
+        return newMovieLoadResponse(
             name = title,
             url = url,
-            apiName = this.name,
             type = globalTvType,
             dataUrl = streamUrl,
-            posterUrl = poster,
-            year = year,
-            plot = descript,
-            tags = tags
-        )
+        ).apply {
+            this.apiName = this@OpJav.name
+            this.posterUrl = poster
+            this.year = year
+            this.plot = descript
+            this.tags = tags
+        }
     }
 
     override suspend fun loadLinks(

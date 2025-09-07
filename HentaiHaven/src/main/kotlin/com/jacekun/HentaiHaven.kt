@@ -42,7 +42,7 @@ class HentaiHaven : MainAPI() {
                     )
                 }
             }
-        return HomePageResponse(all)
+        return newHomePageResponse(all)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
@@ -73,31 +73,34 @@ class HentaiHaven : MainAPI() {
 
         val episodeList = episodes?.mapNotNull {
             val innerA = it?.selectFirst("a") ?: return@mapNotNull null
-            val eplink = innerA.attr("href") ?: return@mapNotNull null
+            val eplink = innerA.attr("href")
             val epCount = innerA.text().trim().filter { a -> a.isDigit() }.toIntOrNull()
             val imageEl = innerA.selectFirst("img")
             val epPoster = imageEl?.attr("src") ?: imageEl?.attr("data-src")
-            Episode(
-                name = innerA.text(),
-                data = eplink,
-                posterUrl = epPoster,
-                episode = epCount,
-            )
+            newEpisode(
+                url = eplink,
+            ).apply {
+                this.name = innerA.text()
+                this.data = eplink
+                this.posterUrl = epPoster
+                this.episode = epCount
+            }
         } ?: listOf()
 
         //Log.i(this.name, "Result => (id) ${id}")
-        return AnimeLoadResponse(
+        return newAnimeLoadResponse(
             name = title,
             url = url,
-            apiName = this.name,
             type = globalTvType,
-            posterUrl = poster,
-            year = year,
-            plot = descript,
-            episodes = mutableMapOf(
+        ).apply {
+            this.apiName = this@HentaiHaven.name
+            this.posterUrl = poster
+            this.year = year
+            this.plot = descript
+            this.episodes = mutableMapOf(
                 Pair(DubStatus.Subbed, episodeList.reversed())
             )
-        )
+        }
     }
 
     override suspend fun loadLinks(
@@ -205,15 +208,16 @@ class HentaiHaven : MainAPI() {
                 Pair(DubStatus.Subbed, latestEp)
             )
 
-            AnimeSearchResponse(
+            newAnimeSearchResponse(
                 name = name,
                 url = link,
-                apiName = apiName,
                 type = globalTvType,
-                posterUrl = image,
-                year = year,
-                episodes = dubStatus
-            )
+            ).apply {
+                //this.apiName = apiName
+                this.posterUrl = image
+                this.year = year
+                this.episodes = dubStatus
+            }
         } ?: listOf()
     }
 

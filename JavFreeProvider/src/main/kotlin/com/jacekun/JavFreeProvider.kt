@@ -46,14 +46,15 @@ class JavFreeProvider : MainAPI() {
                         }
                         val year = null
 
-                        MovieSearchResponse(
+                        newMovieSearchResponse(
                             name = name,
                             url = link,
-                            apiName = this.name,
                             type = globalTvType,
-                            posterUrl = image,
-                            year = year
-                        )
+                        ).apply {
+                            //this.apiName = this@JavFreeProvider.name
+                            this.posterUrl = image
+                            this.year = year
+                        }
                     }
 
                     all.add(
@@ -65,7 +66,7 @@ class JavFreeProvider : MainAPI() {
                     )
                 }
         }
-        return HomePageResponse(all)
+        return newHomePageResponse(all)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
@@ -83,14 +84,15 @@ class JavFreeProvider : MainAPI() {
                     aa.select("div").select("video").attr("poster").toString()
                 }
 
-            MovieSearchResponse(
+            newMovieSearchResponse(
                 name = title,
                 url = url,
-                apiName = this.name,
                 type = globalTvType,
-                posterUrl = image,
-                year = year
-            )
+            ).apply {
+                //this.apiName = this@JavFreeProvider.name
+                this.posterUrl = image
+                this.year = year
+            }
         }
     }
 
@@ -121,16 +123,17 @@ class JavFreeProvider : MainAPI() {
                 }
             }
         //Log.i(this.name, "Result => (id) ${id}")
-        return MovieLoadResponse(
+        return newMovieLoadResponse(
             name = title,
             url = url,
-            apiName = this.name,
             type = globalTvType,
             dataUrl = streamUrl,
-            posterUrl = poster,
-            year = year,
-            plot = descript
-        )
+        ).apply {
+            this.apiName = this@JavFreeProvider.name
+            this.posterUrl = poster
+            this.year = year
+            this.plot = descript
+        }
     }
 
     override suspend fun loadLinks(

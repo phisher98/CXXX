@@ -44,15 +44,16 @@ class JavGuru : MainAPI() {
                 val image = imgArticle?.attr("src")
                 val year = null
 
-                MovieSearchResponse(
-                    name,
-                    link,
-                    this.name,
-                    globaltvType,
-                    image,
-                    year,
-                    null,
-                )
+                newMovieSearchResponse(
+                    name = name,
+                    url = link,
+                    type = globaltvType,
+                ).apply {
+                    //this.apiName = this@JavGuru.name
+                    this.posterUrl = image
+                    this.year = year
+                    this.id = null
+                }
             }
 
             all.add(
@@ -61,7 +62,7 @@ class JavGuru : MainAPI() {
                 )
             )
         }
-        return HomePageResponse(all)
+        return newHomePageResponse(all)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
@@ -71,8 +72,8 @@ class JavGuru : MainAPI() {
             .select("main.site-main").select("div.row").mapNotNull {
 
             val aa = it.select("div.column").select("div.inside-article")
-                .select("div.imgg").select("a") ?: return@mapNotNull null
-            val imgrow = aa.select("img") ?: return@mapNotNull null
+                .select("div.imgg").select("a")
+            val imgrow = aa.select("img")
 
             val href = fixUrlNull(aa.attr("href")) ?: return@mapNotNull null
             val title = imgrow.attr("alt")
@@ -80,14 +81,15 @@ class JavGuru : MainAPI() {
             val year = Regex("(?<=\\/)(.[0-9]{3})(?=\\/)")
                 .find(image)?.groupValues?.get(1)?.toIntOrNull()
 
-            MovieSearchResponse(
-                title,
-                href,
-                this.name,
-                globaltvType,
-                image,
-                year
-            )
+            newMovieSearchResponse(
+                name = title,
+                url = href,
+                type = globaltvType,
+            ).apply {
+                //this.apiName = this@JavGuru.name
+                this.posterUrl = image
+                this.year = year
+            }
         }
     }
 
@@ -109,16 +111,17 @@ class JavGuru : MainAPI() {
         val infometa_list = body.select("div.infometa > div.infoleft > ul > li")
         val year = infometa_list.getOrNull(1)?.text()?.takeLast(10)?.substring(0, 4)?.toIntOrNull()
 
-        return MovieLoadResponse(
+        return newMovieLoadResponse(
             name = title,
             url = url,
-            apiName = this.name,
             type = globaltvType,
             dataUrl = streamUrl,
-            posterUrl = poster,
-            year = year,
-            plot = descript,
-            comingSoon = true
-        )
+        ).apply {
+            this.apiName = this@JavGuru.name
+            this.posterUrl = poster
+            this.year = year
+            this.plot = descript
+            this.comingSoon = true
+        }
     }
 }

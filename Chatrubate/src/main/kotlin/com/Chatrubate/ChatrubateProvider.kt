@@ -34,14 +34,14 @@ class ChatrubateProvider : MainAPI() {
                 offset = 90 * (page - 1)
             }
             val responseList = app.get("$mainUrl${request.data}&offset=$offset").parsedSafe<Response>()!!.rooms.map { room ->
-                LiveSearchResponse(
+                newLiveSearchResponse(
                     name      = room.username,
                     url       = "$mainUrl/${room.username}",
-                    apiName   = this@ChatrubateProvider.name,
                     type      = TvType.Live,
-                    posterUrl = room.img,
-                    lang      = null
-                )
+                ).apply {
+                    this.posterUrl = room.img
+                    this.lang      = null
+                }
             }
             return newHomePageResponse(HomePageList(request.name, responseList, isHorizontalImages = true),hasNext = true)
 
@@ -53,14 +53,14 @@ class ChatrubateProvider : MainAPI() {
 
         for (i in 0..3) {
             val results = app.get("$mainUrl/api/ts/roomlist/room-list/?hashtags=$query&limit=90&offset=${i*90}").parsedSafe<Response>()!!.rooms.map { room ->
-                LiveSearchResponse(
+                newLiveSearchResponse(
                     name      = room.username,
                     url       = "$mainUrl/${room.username}",
-                    apiName   = this@ChatrubateProvider.name,
-                    type      = TvType.Live,
-                    posterUrl = room.img,
-                    lang      = null
-                )
+                ).apply {
+                    this.type      = TvType.Live
+                    this.posterUrl = room.img
+                    this.lang = null
+                }
             }
             if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)
@@ -83,14 +83,14 @@ class ChatrubateProvider : MainAPI() {
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
     
 
-         return LiveStreamLoadResponse(
+         return newLiveStreamLoadResponse(
             name      = title,
             url       = url,
-            apiName   = this.name,
             dataUrl   = url,
-            posterUrl = poster,
-            plot      = description,
-        )
+        ).apply {
+            this.posterUrl = poster
+            this.plot      = description
+        }
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {

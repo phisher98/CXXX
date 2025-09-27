@@ -62,7 +62,7 @@ class Pornhits : MainAPI() {
         val href = fixUrl(this.selectFirst("a")!!.attr("href"))
         var posterUrl = fixUrlNull(this.select("a div.img img").attr("data-original"))
         if(posterUrl.isNullOrEmpty()) posterUrl = fixUrlNull(this.select("a div.img img").attr("src"))
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
 

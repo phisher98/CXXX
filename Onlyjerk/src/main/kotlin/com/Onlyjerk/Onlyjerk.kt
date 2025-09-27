@@ -44,7 +44,7 @@ class Onlyjerk : MainAPI() {
         val href      = this.select("a").attr("href")
         val posterUrl = this.select("a > span").attr("style").substringAfter("url(").substringBefore(")")
 
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }

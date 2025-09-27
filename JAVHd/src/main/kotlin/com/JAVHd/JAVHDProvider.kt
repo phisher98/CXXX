@@ -51,7 +51,7 @@ class JAVHDProvider : MainAPI() {
         val title = this.select(".video-title").text()
         val href = mainUrl + this.select(".thumbnail").attr("href")
         val posterUrl = this.selectFirst(".video-thumb img")?.attr("src")
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }

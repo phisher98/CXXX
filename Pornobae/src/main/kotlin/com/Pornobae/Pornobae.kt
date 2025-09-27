@@ -60,7 +60,7 @@ class Pornobae : MainAPI() {
         val title     = fixTitle(this.select("header span").text().substringAfter(" – ").trim())
         val href      = fixUrl(this.select("a").attr("href"))
         val posterUrl = fixUrlNull(this.select("img").attr("data-src"))
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }

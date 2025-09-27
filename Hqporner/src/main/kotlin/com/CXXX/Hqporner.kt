@@ -54,7 +54,7 @@ class Hqporner : MainAPI() {
         val href       = fixUrl(this.selectFirst("h3 a")!!.attr("href"))
         val posterUrl  = fixUrlNull(this.select("img").attr("src"))
 
-        return newMovieSearchResponse(title, LoadUrl(href, posterUrl).toJson(),TvType.Movie) {
+        return newMovieSearchResponse(title, LoadUrl(href, posterUrl).toJson(),TvType.NSFW) {
             this.posterUrl = posterUrl
         }
 

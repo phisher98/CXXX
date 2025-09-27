@@ -48,7 +48,7 @@ class Spankbang : MainAPI() {
         val posterUrl = fixUrlNull(this.select("a.thumb > picture > img").attr("data-src"))
         Log.d("title","Title check")
 
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }

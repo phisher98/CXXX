@@ -45,7 +45,7 @@ class Xmaza : MainAPI() {
         val href      = fixUrl(this.attr("href"))
         val posterUrl = fixUrlNull(this.attr("style").substringAfter("background-image: url('").substringBefore("'"))
 
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }

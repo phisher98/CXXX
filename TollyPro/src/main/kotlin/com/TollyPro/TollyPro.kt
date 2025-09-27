@@ -85,7 +85,7 @@ class TollyPro : MainAPI() {
             }
         }
         val quality = getQualityFromString(this.select("span.quality").text())
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
             this.quality = quality
         }

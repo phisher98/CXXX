@@ -42,7 +42,7 @@ class YesPornPlease : MainAPI() {
         if(posterUrl.isEmpty()) {
             posterUrl = this.selectFirst("a > img")?.attr("src") ?:""
         }
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }

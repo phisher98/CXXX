@@ -60,7 +60,7 @@ class SxyPrn : MainAPI() {
             posterUrl =
                 fixUrl(this.select("div.vid_container div.post_vid_thumb img").attr("data-src"))
         }
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }

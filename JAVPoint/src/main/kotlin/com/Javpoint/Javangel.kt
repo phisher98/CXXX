@@ -54,7 +54,7 @@ class Javangel : MainAPI() {
         val title     = this.select("h3 a").attr("title").trim()
         val href      = fixUrl(this.select("h3 a").attr("href"))
         val posterUrl = fixUrlNull(this.select("span").attr("data-img-url"))
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }
@@ -63,7 +63,7 @@ class Javangel : MainAPI() {
         val title     = this.select("a").attr("title").trim()
         val href      = fixUrl(this.select("a").attr("href"))
         val posterUrl = fixUrlNull(this.select("a > img").attr("src"))
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }

@@ -42,7 +42,7 @@ class IncestFlix : MainAPI() {
                 val wdoc = app.get(finalWatch, headers = mapOf("User-Agent" to ua), referer = mainUrl).document
                 val wtitle = wdoc.selectFirst("meta[property=og:title]")?.attr("content") ?: wdoc.title()
                 val wposter = wdoc.selectFirst("meta[property=og:image]")?.attr("content")?.let { normalizeUrl(it) }
-                val one = newMovieSearchResponse(wtitle.ifBlank { finalWatch }, finalWatch, TvType.Movie) {
+                val one = newMovieSearchResponse(wtitle.ifBlank { finalWatch }, finalWatch, TvType.NSFW) {
                     this.posterUrl = wposter
                     this.posterHeaders = mapOf(
                         Pair("referer", "$mainUrl/"),
@@ -124,7 +124,7 @@ class IncestFlix : MainAPI() {
             }
             val poster = normalized.firstOrNull { it.contains("/covers/", true) } ?: normalized.firstOrNull()
             val norm = poster
-                val item = newMovieSearchResponse(title, href, TvType.Movie) {
+                val item = newMovieSearchResponse(title, href, TvType.NSFW) {
                     this.posterUrl = norm
                     this.posterHeaders = mapOf(
                         Pair("referer", "$mainUrl/"),
@@ -237,7 +237,7 @@ class IncestFlix : MainAPI() {
         }
         val poster = normalized.firstOrNull { it.contains("/covers/", true) } ?: normalized.firstOrNull()
 
-        val item = newMovieSearchResponse(title, href, TvType.Movie) {
+        val item = newMovieSearchResponse(title, href, TvType.NSFW) {
             val norm = poster
             this.posterUrl = norm
             this.posterHeaders = mapOf(

@@ -39,7 +39,7 @@ class Desisins : MainAPI() { // all providers must be an instance of MainAPI
         val imageUrl = post.select("img").attr("src")
        // Log.d("post",post.toString())
         //val quality = post.select(".video-label").text()
-        return newMovieSearchResponse(title, url, TvType.Movie) {
+        return newMovieSearchResponse(title, url, TvType.NSFW) {
             this.posterUrl = imageUrl
         }
     }
@@ -91,7 +91,7 @@ class Desisins : MainAPI() { // all providers must be an instance of MainAPI
         val title = document.selectFirst("h1")?.text() ?:""
         val desc = document.selectFirst("div.g1-meta")?.text() ?:""
         //val poster = fixUrlNull(document.select("h2 > img").first()?.attr("src"))
-        return newMovieLoadResponse(title, url, TvType.Movie, url) {
+        return newMovieLoadResponse(title, url, TvType.NSFW, url) {
             this.posterUrl = ""
             this.plot = desc
         }

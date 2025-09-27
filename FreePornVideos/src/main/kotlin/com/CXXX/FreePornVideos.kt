@@ -48,7 +48,7 @@ class FreePornVideos : MainAPI() {
         val title      = this.select("strong.title").text()
         val href       = this.selectFirst("a")!!.attr("href")
         val posterUrl         = this.selectFirst("a img")!!.getImageAttr()
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
 

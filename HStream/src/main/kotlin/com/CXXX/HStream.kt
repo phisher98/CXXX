@@ -44,7 +44,7 @@ class HStream : MainAPI() {
         val href       = fixUrl(this.attr("href"))
         val posterUrl  = fixUrlNull(this.select("img").attr("src"))
 
-        return newMovieSearchResponse(title, href,TvType.Movie) {
+        return newMovieSearchResponse(title, href,TvType.NSFW) {
             this.posterUrl = posterUrl
         }
 

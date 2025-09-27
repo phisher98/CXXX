@@ -53,7 +53,7 @@ class Happy2hub : MainAPI() {
         val href      =this.select("a").attr("href")
         val posterUrl =this.select("a img").attr("src")
 
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }

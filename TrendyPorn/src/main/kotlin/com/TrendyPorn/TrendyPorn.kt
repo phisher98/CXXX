@@ -39,7 +39,7 @@ class TrendyPorn : MainAPI() {
         val title = this.select("a").attr("title")
         val href = this.select("a").attr("href")
         val posterUrl = this.select("img").attr("data-original")
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }

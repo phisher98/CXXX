@@ -61,7 +61,7 @@ class Javdoe : MainAPI() {
         val href      = fixUrl(this.select("div.video > a").attr("href"))
         val posterUrl = fixUrlNull(this.select("div.video > a > div > img").attr("data-src"))
         //Log.d("Test","$posterUrl")
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }

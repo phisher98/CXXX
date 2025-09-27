@@ -46,7 +46,7 @@ class XPrimeHub : MainAPI() {
         val href      =this.select("a").attr("href")
         val posterUrl = this.select("div.bw_thumb img").attr("src").takeIf { it.startsWith("http") }
             ?: this.select("div.bw_thumb img").attr("data-src").takeIf { it.startsWith("http") }
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }

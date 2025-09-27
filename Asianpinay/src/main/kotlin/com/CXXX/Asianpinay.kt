@@ -39,7 +39,7 @@ class Asianpinay : MainAPI() {
         val title           = rawtitle.replaceFirstChar { it.uppercase() }
         val href       = this.selectFirst("a.thumb")!!.attr("href")
         val posterUrl  = this.select("a.thumb > img").attr("data-src")
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
 

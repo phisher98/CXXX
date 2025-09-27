@@ -67,7 +67,7 @@ class PornhoarderPlugin : MainAPI() {
         val title = this.select(".video-content h1").text().replace("| PornHoarder.tv","")
         val href = mainUrl + this.select(".video-link").attr("href")
         val posterUrl = this.selectFirst(".video-image.primary.b-lazy")?.attr("data-src")
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }

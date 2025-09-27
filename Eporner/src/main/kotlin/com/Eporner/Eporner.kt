@@ -49,7 +49,7 @@ class Eporner : MainAPI() {
         {
             posterUrl=this.selectFirst("img")?.attr("src")
         }
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }

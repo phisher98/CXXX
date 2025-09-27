@@ -228,7 +228,7 @@ class XnhauProvider : MainAPI() {
         val recommendations = document.select("#list_videos_related_videos_items .item").mapNotNull { it.toSearchResponse() }
 
         // Dùng newMovieLoadResponse (đã đúng)
-        return newMovieLoadResponse(title, url, TvType.Movie, url) {
+        return newMovieLoadResponse(title, url, TvType.NSFW, url) {
                 this.posterUrl = posterUrl
                 this.plot = description
                 this.tags = tags

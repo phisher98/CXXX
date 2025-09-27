@@ -61,7 +61,7 @@ class PornOneProvider : MainAPI() {
             posterUrl = this.select(".imgvideo").attr("src")
         }
 
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }

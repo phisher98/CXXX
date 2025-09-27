@@ -40,7 +40,7 @@ class Uncut99 : MainAPI() {
         val href      = fixUrl(this.select("a").attr("href"))
         val posterUrl = fixUrlNull(this.select("a > div.post-thumbnail>div.inner-border>img").attr("data-src"))
 
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }

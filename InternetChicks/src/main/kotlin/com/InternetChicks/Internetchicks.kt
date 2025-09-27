@@ -44,7 +44,7 @@ class internetchicks : MainAPI() {
         val href      = fixUrl(this.select("header > h2 > a").attr("href"))
         val posterUrl = fixUrlNull(this.select("header > a > img").attr("data-src"))
         println(posterUrl)
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }

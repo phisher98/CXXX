@@ -47,7 +47,7 @@ class Javtiful : MainAPI() {
         val href      = fixUrl(this.select("a").attr("href"))
         val posterUrl = fixUrlNull(this.select("a img").attr("data-src"))
         val quality= getQualityFromString(this.select("span.label-hd").text())
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
             this.quality= quality
         }

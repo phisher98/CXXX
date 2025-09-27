@@ -76,7 +76,7 @@ class Porntrex : MainAPI() {
         val title = this.selectFirst("p.inf a")?.text() ?: return null
         val href = fixUrl(this.selectFirst("p.inf a")!!.attr("href"))
         val posterUrl = fixUrlNull(this.select("a.thumb img.cover").attr("data-src"))
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
             this.posterHeaders = mapOf(Pair("referer", "${mainUrl}/"))
         }

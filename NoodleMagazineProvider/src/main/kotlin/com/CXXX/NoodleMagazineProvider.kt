@@ -42,7 +42,7 @@ class NoodleMagazineProvider : MainAPI() { // all providers must be an instance 
         val title = this.selectFirst("a div.i_info div.title")?.text() ?: return null
         val posterUrl = fixUrlNull(this.selectFirst("a div.i_img img")?.attr("data-src"))
 
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }

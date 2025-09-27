@@ -42,7 +42,7 @@ class SextbProvider : MainAPI() {
         val title = this.select(".tray-item-title").text()
         val href = mainUrl + this.select("a:nth-of-type(1)").attr("href")
         val posterUrl = this.selectFirst(".tray-item-thumbnail")?.attr("data-src")
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }

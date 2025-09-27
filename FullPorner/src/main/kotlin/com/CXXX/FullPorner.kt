@@ -47,7 +47,7 @@ class FullPorner : MainAPI() {
         val href = fixUrl(this.selectFirst("div.video-card div.video-card-body div.video-title a")!!.attr("href"))
         val posterUrl = fixUrlNull(this.select("div.video-card div.video-card-image a img").attr("data-src"))
 
-        return newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = posterUrl }
+        return newMovieSearchResponse(title, href, TvType.NSFW) { this.posterUrl = posterUrl }
     }
 
     override suspend fun search(query: String): List<SearchResponse> {

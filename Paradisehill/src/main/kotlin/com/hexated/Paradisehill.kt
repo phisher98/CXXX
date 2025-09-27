@@ -42,7 +42,7 @@ class Paradisehill : MainAPI() {
         val title = this.selectFirst("span[itemprop=name]")?.text() ?: return null
         val href = fixUrl(this.selectFirst("a")!!.attr("href"))
         val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
 

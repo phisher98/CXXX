@@ -57,7 +57,7 @@ class XvideosProvider : MainAPI() {
         }
         // Log.d("Xvv1deosProvider", "Title: $title, Poster: $posterUrl, FullURL: $fullUrl")
 
-        return newAnimeSearchResponse(title, fullUrl, TvType.Movie) {
+        return newAnimeSearchResponse(title, fullUrl, TvType.NSFW) {
             this.posterUrl = posterUrl
             if (!posterUrl.isNullOrBlank()) {
                 this.posterHeaders = mapOf("Referer" to mainUrl)
@@ -152,7 +152,7 @@ class XvideosProvider : MainAPI() {
                                    recImage = mainUrl + recImage
                                 }
                              }
-                            recommendations.add(newAnimeSearchResponse(recTitle, recHref, TvType.Movie) {
+                            recommendations.add(newAnimeSearchResponse(recTitle, recHref, TvType.NSFW) {
                                 this.posterUrl = if (recImage.isNotBlank()) recImage else null
                                 if (!this.posterUrl.isNullOrBlank()) {
                                     this.posterHeaders = mapOf("Referer" to mainUrl)
@@ -164,7 +164,7 @@ class XvideosProvider : MainAPI() {
             }
         }
 
-        return newMovieLoadResponse(title, url, TvType.Movie, url) {
+        return newMovieLoadResponse(title, url, TvType.NSFW, url) {
             this.posterUrl = poster
             if (!this.posterUrl.isNullOrBlank()) {
                 this.posterHeaders = mapOf("Referer" to mainUrl)

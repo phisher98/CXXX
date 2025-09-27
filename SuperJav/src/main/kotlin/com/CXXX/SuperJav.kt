@@ -46,7 +46,7 @@ class SuperJav : MainAPI() {
         val title      = this.selectFirst("a")?.attr("title") ?: "Unknown"
         val href       = this.selectFirst("a")!!.attr("href")
         val posterUrl  = this.select("a > img").attr("data-original")
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
 

@@ -10,19 +10,19 @@ import org.jsoup.nodes.Element
 
 class Fxprnhd : MainAPI() {
     override var mainUrl = "https://fxpornhd.com"
-    override var name = "Fxprnhd"
+    override var name = "FXPornHD"
     override val hasMainPage = true
     override val hasDownloadSupport = true
     override val vpnStatus = VPNStatus.MightBeNeeded
     override val supportedTypes = setOf(TvType.NSFW)
 
     override val mainPage = mainPageOf(
+        mainUrl to "Newest",
         "$mainUrl/c/bangbros" to "Bang Bros",
         "$mainUrl/c/brazzers" to "Brazzers",
         "$mainUrl/c/realitykings" to "Reality Kings",
         "$mainUrl/c/blacked" to "Blacked",
         "$mainUrl/c/pervmom" to "Pervmom",
-
         )
 
     override suspend fun getMainPage(
@@ -30,11 +30,7 @@ class Fxprnhd : MainAPI() {
         request: MainPageRequest
     ): HomePageResponse {
         val document = app.get("${request.data}/page/$page").document
-        val home =
-            document.select("article")
-                .mapNotNull {
-                    it.toSearchResult()
-                }
+        val home = document.select("article").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(
             list = HomePageList(
                 name = request.name,
@@ -48,27 +44,25 @@ class Fxprnhd : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse? {
         val title = this.selectFirst("span.title")?.text() ?: return null
         val href = fixUrl(this.selectFirst("a")!!.attr("href"))
-        val posterUrl = this.select("img").attr("src")
-        Log.d("posterUrl", posterUrl)
+        val posterUrl = this.selectFirst("img,video")?.let { img ->
+            img.attr("src")
+                .ifEmpty { img.attr("poster") }
+                .ifEmpty { img.attr("data-src") }
+        } ?: ""
+        val quality= this.select("span.hd-video").text()
+        Log.d("posterUrl", this.toString())
         return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
+            this.quality= getQualityFromString(quality)
         }
 
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
-        for (i in 1..15) {
-            val document =
-                app.get(
-                    "$mainUrl/search/?s=query&page=$i",
-                    headers = mapOf("X-Requested-With" to "XMLHttpRequest")
-                ).document
-            val results =
-                document.select("div.videos-list > article")
-                    .mapNotNull {
-                        it.toSearchResult()
-                    }
+        for (i in 1..10) {
+            val document = app.get("$mainUrl/?s=$query&page=$i", headers = mapOf("X-Requested-With" to "XMLHttpRequest")).document
+            val results = document.select("div.videos-list > article").mapNotNull { it.toSearchResult() }
             searchResponse.addAll(results)
             if (results.isEmpty()) break
         }

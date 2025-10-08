@@ -16,6 +16,7 @@ import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
+import com.lagradost.cloudstream3.SearchResponseList
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.newExtractorLink
@@ -83,25 +84,20 @@ class Porntrex : MainAPI() {
 
     }
 
-    override suspend fun search(query: String): List<SearchResponse> {
-        val searchResponse = mutableListOf<SearchResponse>()
-        for (i in 1..15) {
-            val url: String = if (i == 1) {
-                "$mainUrl/search/${query.replace(" ", "-")}/"
-            } else {
-                "$mainUrl/search/${query.replace(" ", "-")}/$i/"
-            }
-            val document =
-                    app.get(url).document
-            val results =
-                    document.select("div.video-list div.video-item")
-                            .mapNotNull {
-                                it.toSearchResult()
-                            }
-            searchResponse.addAll(results)
-            if (results.isEmpty()) break
+    override suspend fun search(query: String, page: Int): SearchResponseList? {
+        val url: String = if (page == 1) {
+            "$mainUrl/search/${query.replace(" ", "-")}/"
+        } else {
+            "$mainUrl/search/${query.replace(" ", "-")}/$page/"
         }
-        return searchResponse
+        val document = app.get(url).document
+        val results =
+            document.select("div.video-list div.video-item")
+                .mapNotNull {
+                    it.toSearchResult()
+                }
+        val hasNext = if(results.isEmpty()) false else true
+        return SearchResponseList(results, hasNext)
     }
 
     override suspend fun load(url: String): LoadResponse {

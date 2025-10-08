@@ -52,23 +52,11 @@ class Porn4fans : MainAPI() {
         }
     }
 
-    override suspend fun search(query: String): List<SearchResponse> {
-        val searchResponse = mutableListOf<SearchResponse>()
-
-        for (i in 1..7) {
-            val document = app.get("$mainUrl/search/$query/?mode=async&function=get_block&block_id=custom_list_videos_videos_list_search_result&q=$query&category_ids&sort_by&from_videos=$i&from_albums=$i").document
-            val results = document.select("div.item").mapNotNull { it.toSearchResult() }
-
-            if (!searchResponse.containsAll(results)) {
-                searchResponse.addAll(results)
-            } else {
-                break
-            }
-
-            if (results.isEmpty()) break
-        }
-
-        return searchResponse
+    override suspend fun search(query: String, page: Int): SearchResponseList? {
+        val document = app.get("$mainUrl/search/$query/?mode=async&function=get_block&block_id=custom_list_videos_videos_list_search_result&q=$query&category_ids&sort_by&from_videos=$page&from_albums=$page").document
+        val results = document.select("div.item").mapNotNull { it.toSearchResult() }
+        val hasNext = if(results.isEmpty()) false else true
+        return SearchResponseList(results, hasNext)
     }
 
     override suspend fun load(url: String): LoadResponse {

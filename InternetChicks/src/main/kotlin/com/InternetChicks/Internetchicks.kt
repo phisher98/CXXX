@@ -49,24 +49,11 @@ class internetchicks : MainAPI() {
         }
     }
 
-    override suspend fun search(query: String): List<SearchResponse> {
-        val searchResponse = mutableListOf<SearchResponse>()
-
-        for (i in 1..5) {
-            val document = app.get("${mainUrl}/page/$i/?s=$query&id=5036").document
-
-            val results = document.select("article").mapNotNull { it.toSearchResult() }
-
-            if (!searchResponse.containsAll(results)) {
-                searchResponse.addAll(results)
-            } else {
-                break
-            }
-
-            if (results.isEmpty()) break
-        }
-
-        return searchResponse
+    override suspend fun search(query: String, page : Int): SearchResponseList? {
+        val document = app.get("${mainUrl}/page/$page/?s=$query&id=5036").document
+        val results = document.select("article").mapNotNull { it.toSearchResult() }
+        val hasNext = if(results.isEmpty()) false else true
+        return SearchResponseList(results, hasNext)
     }
 
     override suspend fun load(url: String): LoadResponse {

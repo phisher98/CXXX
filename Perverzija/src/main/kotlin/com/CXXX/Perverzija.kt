@@ -82,25 +82,20 @@ class Perverzija : MainAPI() {
 
     }
 
-    override suspend fun search(query: String): List<SearchResponse> {
-        val searchResponse = mutableListOf<SearchResponse>()
-        val maxPages = if (query.contains(" ")) 6 else 20
-        for (i in 1..maxPages) {
-            val url = if (query.contains(" ")) {
-            "$mainUrl/page/$i/?s=${query.replace(" ", "+")}&orderby=date"
-            } else {
-                "$mainUrl/tag/$query/page/$i/"
-            }
-
-            val results = app.get(url, interceptor = cfInterceptor).document
-                .select("div.row div div.post").mapNotNull {
-                    it.toSearchResult()
-                }.distinctBy { it.url }
-            if (results.isEmpty()) break
-            else delay((100L..500L).random())
-            searchResponse.addAll(results)
+    override suspend fun search(query: String, page: Int): SearchResponseList? {
+        val url = if (query.contains(" ")) {
+        "$mainUrl/page/$page/?s=${query.replace(" ", "+")}&orderby=date"
+        } else {
+            "$mainUrl/tag/$query/page/$page/"
         }
-        return searchResponse.distinctBy { it.url }
+
+        val results = app.get(url, interceptor = cfInterceptor).document
+            .select("div.row div div.post").mapNotNull {
+                it.toSearchResult()
+        }.distinctBy { it.url }
+
+        val hasNext = if (results.isEmpty()) false else true
+        return SearchResponseList(results, hasNext)
     }
 
     override suspend fun load(url: String): LoadResponse {

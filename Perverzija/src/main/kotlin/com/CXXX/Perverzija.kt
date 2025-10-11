@@ -15,6 +15,7 @@ import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.SearchResponseList
+import com.lagradost.cloudstream3.newSearchResponseList
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
@@ -96,7 +97,7 @@ class Perverzija : MainAPI() {
         }.distinctBy { it.url }
 
         val hasNext = if (results.isEmpty()) false else true
-        return SearchResponseList(results, hasNext)
+        return newSearchResponseList(results, hasNext)
     }
 
     override suspend fun load(url: String): LoadResponse {

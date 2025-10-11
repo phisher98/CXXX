@@ -53,7 +53,7 @@ class internetchicks : MainAPI() {
         val document = app.get("${mainUrl}/page/$page/?s=$query&id=5036").document
         val results = document.select("article").mapNotNull { it.toSearchResult() }
         val hasNext = if(results.isEmpty()) false else true
-        return SearchResponseList(results, hasNext)
+        return newSearchResponseList(results, hasNext)
     }
 
     override suspend fun load(url: String): LoadResponse {

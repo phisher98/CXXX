@@ -63,7 +63,7 @@ class JAVHDProvider : MainAPI() {
         val document = app.get("$mainUrl/search/video/?s=$query&page=$page").document
         val results = document.select("div.video").mapNotNull { it.toSearchResult() }
         val hasNext = if (results.isEmpty()) false else true
-        return SearchResponseList(results, hasNext)
+        return newSearchResponseList(results, hasNext)
     }
 
     override suspend fun load(url: String): LoadResponse {

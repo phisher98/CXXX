@@ -130,7 +130,7 @@ class AllPornStream : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val res = app.get("$mainUrl/api/post?id=${url.substringAfterLast("/")}").parsedSafe<Load>()
-        val loaddata=res?.post
+        val loaddata = res?.post
         val title = loaddata?.videoTitle ?: "Unknown"
         val poster = loaddata?.imageDetails
             ?.firstOrNull { it.startsWith("http") }

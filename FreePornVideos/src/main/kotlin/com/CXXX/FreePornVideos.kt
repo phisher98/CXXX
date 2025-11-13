@@ -93,7 +93,7 @@ class FreePornVideos : MainAPI() {
         val recommendations = document.select("div#list_videos_related_videos_items div.item").mapNotNull { it.toSearchResult() }
 
         val year            = full_title.substring(full_title.length - 4).toIntOrNull()
-        val rating          = document.selectFirst("div.rating span")?.text()?.substringBefore("%")?.trim()?.toFloatOrNull()?.div(10)?.toString()?.toRatingInt()
+        val rating          = document.selectFirst("div.rating span")?.text()?.substringBefore("%")?.trim()?.toFloatOrNull()?.div(10)?.toString()
 
         val raw_duration    = document.selectXpath("//span[contains(text(), 'Duration')]/em").text().trim()
         val duration_parts  = raw_duration.split(":")
@@ -115,7 +115,7 @@ class FreePornVideos : MainAPI() {
             this.plot            = description
             this.tags            = tags
             this.recommendations = recommendations
-            this.rating          = rating
+            this.rating          = Score.from10(rating)
             this.duration        = duration
             addActors(actors)
         }

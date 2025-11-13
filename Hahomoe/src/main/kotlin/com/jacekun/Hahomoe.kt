@@ -237,8 +237,6 @@ class Hahomoe : MainAPI() {
             this.plot = synopsis
             this.tags = ArrayList(genre)
             this.synonyms = ArrayList(synonyms)
-            this.rating = null
-            this.duration = null
             this.year = year.toIntOrNull()
         }
     }

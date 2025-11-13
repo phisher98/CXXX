@@ -44,20 +44,11 @@ class TrendyPorn : MainAPI() {
         }
     }
 
-    override suspend fun search(query: String): List<SearchResponse> {
-        val searchResponse = mutableListOf<SearchResponse>()
-
-        for (i in 1..5) {
-            val document = app.get("${mainUrl}/search/${query}/page${i}.html").document
-
-            val results = document.select("div.well-sm").mapNotNull { it.toSearchResult() }
-
-            searchResponse.addAll(results)
-
-            if (results.isEmpty()) break
-        }
-
-        return searchResponse
+    override suspend fun search(query: String, page: Int): SearchResponseList? {
+        val document = app.get("${mainUrl}/search/${query}/page${page}.html").document
+        val results = document.select("div.well-sm").mapNotNull { it.toSearchResult() }
+        val hasNext = if(results.isEmpty()) false else true
+        return newSearchResponseList(results, hasNext)
     }
 
     override suspend fun load(url: String): LoadResponse {

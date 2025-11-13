@@ -1,10 +1,11 @@
 // use an integer for version numbers
-version = 3
+version = 1
+
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "TrendyPorn"
+    description = ""
     language    = "en"
     authors = listOf("megix")
 
@@ -21,5 +22,5 @@ cloudstream {
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("NSFW")
-    iconUrl = "https://pbs.twimg.com/profile_images/1054618246551298048/Dkj4DQSt_400x400.jpg"
+    iconUrl = "https://xmoviesforyou.com/wp-content/uploads/2018/08/logo.png"
 }

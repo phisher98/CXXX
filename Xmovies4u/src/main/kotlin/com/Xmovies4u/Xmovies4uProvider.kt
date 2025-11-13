@@ -8,9 +8,5 @@ import android.content.Context
 class Xmovies4uProvider: Plugin() {
     override fun load(context: Context) {
         registerMainAPI(Xmovies4u())
-        registerExtractorAPI(BigwrapPro())
-        registerExtractorAPI(Vide0())
-        registerExtractorAPI(Streamtapeadblockuser())
-        registerExtractorAPI(MixdropAG())
     }
 }

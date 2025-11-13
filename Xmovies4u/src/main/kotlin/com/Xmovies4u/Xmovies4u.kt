@@ -68,7 +68,7 @@ class Xmovies4u : MainAPI() {
         val document = app.get(url).document
         val title       = document.select("meta[property=og:title]").attr("content")
         val poster      = document.select("meta[property='og:image']").attr("content")
-        val description = document.select("meta[property=og:description]").attr("content")
+        val description = document.select("div.entry-content > p > span > span").text()
 
         return newMovieLoadResponse(title, url, TvType.NSFW, url) {
             this.posterUrl = poster
@@ -79,29 +79,26 @@ class Xmovies4u : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
         document.select("span > span > a").amap {
-            loadExtractor(
-                it.attr("href"),
-                "$mainUrl/",
-                subtitleCallback,
-                callback
-            )
+            val text = it.text()
+            val link = it.attr("href")
+
+            if(text.contains("STREAMTAPE", true)) {
+                StreamTape().getUrl(link, data, subtitleCallback, callback)
+            } else if(text.contains("MIXDROP", true)) {
+                MixDrop().getUrl(link, data, subtitleCallback, callback)
+            } else if(text.contains("DOODSTREAM", true)) {
+                DoodLaExtractor().getUrl(link, data, subtitleCallback, callback)
+            } else if(text.contains("BIGWARP", true)) {
+                BigwarpIO().getUrl(link, data, subtitleCallback, callback)
+            } else {
+                loadExtractor(
+                    link,
+                    "$mainUrl/",
+                    subtitleCallback,
+                    callback
+                )
+            }
         }
         return true
     }
-}
-
-class BigwrapPro : BigwarpIO() {
-    override var mainUrl = "https://bigwarp.pro"
-}
-
-class Vide0 : DoodLaExtractor() {
-    override var mainUrl = "https://vide0.net"
-}
-
-class Streamtapeadblockuser : StreamTape() {
-    override var mainUrl = "https://streamtapeadblockuser.art"
-}
-
-class MixdropAG : MixDrop() {
-    override var mainUrl = "https://mixdrop.ag"
 }

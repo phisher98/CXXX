@@ -46,19 +46,14 @@ class NoodleMagazineProvider : MainAPI() { // all providers must be an instance 
             this.posterUrl = posterUrl
         }
     }
-    @Suppress("DEPRECATION")
-    override suspend fun search(query: String): List<MovieSearchResponse> {
-        val searchresult = mutableListOf<MovieSearchResponse>()
 
-        (0..10).toList().apmap { page ->
-            val doc = app.get("$mainUrl/video/$query?p=$page").document
-            doc.select("div.item").apmap { res ->
-                res.toSearchResult()?.let { searchresult.add(it) }
-            }
-        }
-
-        return searchresult
+    override suspend fun search(query: String, page: Int): SearchResponseList? {
+        val document = app.get("$mainUrl/video/$query?p=$page").document
+        val results = document.select("div.item").mapNotNull { it.toSearchResult() }
+        val hasNext = if(results.isEmpty()) false else true
+        return newSearchResponseList(results, hasNext)
     }
+
   @Suppress("DEPRECATION")
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document

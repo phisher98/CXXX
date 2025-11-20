@@ -12,12 +12,15 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import kotlinx.coroutines.runBlocking
 import org.jsoup.nodes.Element
 import java.time.Year
 
 class TollyPro : MainAPI() {
 
-    override var mainUrl = "https://tellyhd.buzz"
+    override var mainUrl: String = runBlocking {
+        TollyProProvider.getDomains()?.Tellyhd ?: "https://tellyhd.media"
+    }
     override var name = "TellyHD"
     override val hasMainPage= true
     override var lang= "hi"
@@ -27,11 +30,8 @@ class TollyPro : MainAPI() {
     @SuppressLint("NewApi")
     override val mainPage = mainPageOf(
         "release/${Year.now().value}" to "Latest",
-        "movies" to "Movies",
-        "genre/indian" to "Indian",
         "genre/usa" to "USA",
         "genre/jav" to "JAV",
-        "genre/uncensored" to "Uncensored",
         "genre/bindastimes" to "Bindastimes",
         "genre/hunters" to "Hunters",
         "genre/neonx" to "Neonx",
@@ -115,25 +115,21 @@ class TollyPro : MainAPI() {
                 posterUrl = fixUrlNull(document.select("div.poster img").attr("src"))
         }
         val description = document.select("div.wp-content > p").text().trim()
-            val episodes =
-                document.select("ul#playeroptionsul > li").map {
-                    val name = it.selectFirst("span.title")?.text()
-                    //val type = it.attr("data-type")
-                   // val post = it.attr("data-post")
-                   // val nume = it.attr("data-nume")
-                   val iframelink= if(name?.startsWith("Dood") == true){
-                       document.select("iframe")[1].attr("src") 
-                   }else{
-                       document.select("iframe")[0].attr("src")
-                   }
-                    newEpisode(
-                        //LinkData(type, post,nume).toJson(),
-                        iframelink){
-                       this.name= name
-                    }
+        val episodes = document
+            .select("ul#playeroptionsul > li")
+            .mapNotNull { li ->
+                val name = li.selectFirst("span.title")?.text()
+                val type = li.attr("data-type")
+                val post = li.attr("data-post")
+                val nume = li.attr("data-nume")
+                if (name?.contains("trailer", ignoreCase = true) == true || name?.contains("dood", ignoreCase = true) == true) return@mapNotNull null
+                val json = LinkData(type, post, nume).toJson()
+                newEpisode(json) {
+                    this.name = name
                 }
+            }
 
-            return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+        return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = posterUrl
                 this.plot = description
             }
@@ -146,14 +142,14 @@ class TollyPro : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-           // val loadData = tryParseJson<LinkData>(data)
-           // val source = app.post(
-           //     url = "$mainUrl/wp-admin/admin-ajax.php", data = mapOf(
-           //         "action" to "doo_player_ajax", "post" to "${loadData?.post}", "nume" to "${loadData?.nume}", "type" to "${loadData?.type}"
-           //     ), referer = data, headers = mapOf("Accept" to "*/*", "X-Requested-With" to "XMLHttpRequest"
-           //     )).parsed<ResponseHash>().embed_url.getIframe()
+           val loadData = tryParseJson<LinkData>(data)
+           val iframe= app.post(
+           url = "$mainUrl/wp-admin/admin-ajax.php", data = mapOf(
+                  "action" to "doo_player_ajax", "post" to "${loadData?.post}", "nume" to "${loadData?.nume}", "type" to "${loadData?.type}"
+               ), referer = data, headers = mapOf("Accept" to "*/*", "X-Requested-With" to "XMLHttpRequest"
+               )).parsed<ResponseHash>().embedUrl.getIframe()
             if (!data.contains("youtube")) loadExtractor(
-                data,
+                iframe,
                 "$directUrl/",
                 subtitleCallback,
                 callback
@@ -179,9 +175,9 @@ class TollyPro : MainAPI() {
         val post: String? = null,
         val nume: String? = null,
     )
-
     data class ResponseHash(
-        @JsonProperty("embed_url") val embed_url: String,
-        @JsonProperty("type") val type: String?,
+        @JsonProperty("embed_url")
+        val embedUrl: String,
+        val type: String,
     )
 }

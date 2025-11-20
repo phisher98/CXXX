@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 data class Posts(
     val posts: List<PostMain>,
     val count: Long,
+    val nextCursor: Any?,
 )
 
 data class PostMain(
@@ -22,12 +23,14 @@ data class PostMain(
     val producers: List<String>,
     val actors: List<String>,
     val categories: List<String>,
-    val misc: List<Any?>,
+    val misc: Any?,
     @JsonProperty("image_details")
     val imageDetails: List<String>,
     val views: Long,
     val like: Long,
     val dislike: Long,
+    @JsonProperty("video_urls")
+    val videoUrls: Any?,
     val slug: String,
 )
 

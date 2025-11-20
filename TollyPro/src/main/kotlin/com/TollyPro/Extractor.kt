@@ -1,6 +1,7 @@
 package com.TollyPro
 
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.extractors.LuluStream
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -25,6 +26,16 @@ class Vidhidehub : VidhideExtractor() {
 }
 class Vidhidetoul : VidhideExtractor() {
     override var mainUrl = "https://toul.hair"
+}
+class Xtapes : VidhideExtractor() {
+    override var mainUrl = "https://xtapes.porn"
+    override var name = "Xtapes"
+}
+
+
+class Luluvid : LuluStream() {
+    override val name = "Lulustream"
+    override val mainUrl = "https://luluvid.com"
 }
 
 open class Ds2play : ExtractorApi() {

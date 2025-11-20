@@ -107,7 +107,7 @@ class AllPornStream : MainAPI() {
 
     private fun RelatedPost.toSearchResult(): SearchResponse {
         val title = this.videoTitle
-        val href = this.id
+        val href = this.slug
         val posterUrl = this.imageDetails
             .firstOrNull { it.startsWith("http") }
         return newMovieSearchResponse(title, href, TvType.NSFW) {

@@ -1,12 +1,29 @@
 package com.JAVHd
 
-import android.util.Log
-import org.jsoup.nodes.Element
-import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.*
-import okhttp3.FormBody
+import com.lagradost.cloudstream3.HomePageList
+import com.lagradost.cloudstream3.HomePageResponse
+import com.lagradost.cloudstream3.LoadResponse
+import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SearchResponseList
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.VPNStatus
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.fixUrlNull
+import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.newHomePageResponse
+import com.lagradost.cloudstream3.newMovieLoadResponse
+import com.lagradost.cloudstream3.newMovieSearchResponse
+import com.lagradost.cloudstream3.newSearchResponseList
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.runAllAsync
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 
 class JAVHDProvider : MainAPI() {
     override var mainUrl              = "https://javhd.today"
@@ -29,6 +46,7 @@ class JAVHDProvider : MainAPI() {
             "/reducing-mosaic/" to "Reduced Mosaic",
             "/amateur/" to "Amateur"
         )
+
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
             val document = if(page == 1)
             {
@@ -59,7 +77,7 @@ class JAVHDProvider : MainAPI() {
         }
     }
 
-    override suspend fun search(query: String, page: Int): SearchResponseList? {
+    override suspend fun search(query: String, page: Int): SearchResponseList {
         val document = app.get("$mainUrl/search/video/?s=$query&page=$page").document
         val results = document.select("div.video").mapNotNull { it.toSearchResult() }
         val hasNext = if (results.isEmpty()) false else true
@@ -86,7 +104,7 @@ class JAVHDProvider : MainAPI() {
             {
                 val episodeList = doc.select(".button_style .button_choice_server")
                     episodeList.forEach { item ->
-                    var link = item.attr("data-embed")
+                    val link = item.attr("data-embed")
                     loadExtractor(base64Decode(link),subtitleCallback,callback)
                 }
             },
@@ -119,23 +137,23 @@ class JAVHDProvider : MainAPI() {
                             try {
                                 val language = item.select(".sub-single span:nth-child(2)").text()
                                 val text = item.select(".sub-single span:nth-child(3) a")
-                                if(text != null && text.size > 0 && text[0].text() == "Download")
+                                if(text.isNotEmpty() && text[0].text() == "Download")
                                 {
                                     val url = "$subtitleCatUrl${text[0].attr("href")}"
                                     subtitleCallback.invoke(
-                                        SubtitleFile(
+                                        newSubtitleFile(
                                             language.replace("\uD83D\uDC4D \uD83D\uDC4E",""),  // Use label for the name
                                             url     // Use extracted URL
                                         )
                                     )
                                 }
-                            } catch (e: Exception) { }
+                            } catch (_: Exception) { }
                         }
 
                     }
                 }
 
             }
-        } catch (e: Exception) { }
+        } catch (_: Exception) { }
     }
 }

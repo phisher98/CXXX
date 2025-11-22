@@ -1,6 +1,7 @@
 package com.jacekun
 
 import android.annotation.SuppressLint
+import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
@@ -155,7 +156,7 @@ class Hahomoe : MainAPI() {
         var document = Jsoup.parse(response.text)
         val returnValue = parseSearchPage(document)
 
-        while (document.select("""a.page-link[rel="next"]""").isNullOrEmpty()) {
+        while (document.select("""a.page-link[rel="next"]""").isEmpty()) {
             val link = document.select("""a.page-link[rel="next"]""")
             if (link.isNotEmpty()) {
                 response = app.get(link[0].attr("href"), cookies = mapOf("loop-view" to "thumb"))
@@ -182,52 +183,38 @@ class Hahomoe : MainAPI() {
                 ?.parent()
                 ?.text()
                 ?.trim()
-        val canonicalTitle = document.selectFirst("header.entry-header > h1.mb-3")?.text()?.trim()
+        val canonicalTitle = document.selectFirst("header.entry-header > h1.mb-3")?.text()?.trim() ?: "No Title"
 
         val episodeNodes = document.select("li[class*=\"episode\"] > a")
 
         val episodes = episodeNodes.mapNotNull {
             val dataUrl = it?.attr("href") ?: return@mapNotNull null
-            val epi = newEpisode(
-                url = dataUrl,
-            ).apply {
+            val title = it.selectFirst(".episode-title")?.text()?.trim()
+            val epno = it.select("div.episode-slug").text()
+            newEpisode(dataUrl) {
                 this.data = dataUrl
-                this.name = it.selectFirst(".episode-title")?.text()?.trim()
+                this.name = if (title?.contains("No Title", ignoreCase = true) == true) { epno } else { title }
                 this.posterUrl = it.selectFirst("img")?.attr("src")
                 this.description = it.attr("data-content").trim()
+                addDate(it.selectFirst(".episode-date")?.text()?.trim())
             }
-            epi.addDate(it.selectFirst(".episode-date")?.text()?.trim())
-            epi
         }
         val status =
             when (document.selectFirst("li.status > .value")?.text()?.trim()) {
                 "Ongoing" -> ShowStatus.Ongoing
                 "Completed" -> ShowStatus.Completed
                 else -> null
-            }
+        }
         val yearText = document.selectFirst("li.release-date .value")?.text() ?: ""
         val pattern = "(\\d{4})".toRegex()
         val (year) = pattern.find(yearText)!!.destructured
-
         val poster = document.selectFirst("img.cover-image")?.attr("src")
         val type = document.selectFirst("a[href*=\"$mainUrl/type/\"]")?.text()?.trim()
-
         val synopsis = document.selectFirst(".entry-description > .card-body")?.text()?.trim()
-        val genre =
-            document.select("li.genre.meta-data > span.value").map {
-                it?.text()?.trim().toString()
-            }
+        val genre = document.select("li.genre.meta-data > span.value").map { it?.text()?.trim().toString() }
+        val synonyms = document.select("li.synonym.meta-data > div.info-box > span.value").map { it?.text()?.trim().toString() }
 
-        val synonyms =
-            document.select("li.synonym.meta-data > div.info-box > span.value").map {
-                it?.text()?.trim().toString()
-            }
-
-        return newAnimeLoadResponse(
-            name = canonicalTitle ?: "",
-            url = url,
-            type = getType(type ?: ""),
-        ).apply {
+        return newAnimeLoadResponse(canonicalTitle, url, getType(type ?: "")) {
             this.engName = englishTitle
             this.japName = japaneseTitle
             this.apiName = this@Hahomoe.name

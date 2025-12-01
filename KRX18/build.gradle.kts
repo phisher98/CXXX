@@ -1,9 +1,9 @@
 version = 2
 
 cloudstream {
-    authors     = listOf("rockhero1234")
-    language    = "hi"
-    description = "18+ webseries clips"
+    authors     = listOf("Phisher98")
+    language    = "en"
+    description = "18+ Asian"
 
     /**
      * Status int as the following:

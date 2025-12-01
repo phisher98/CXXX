@@ -14,5 +14,5 @@ cloudstream {
     **/
     status  = 1 // will be 3 if unspecified
     tvTypes = listOf("NSFW")
-    iconUrl = "https://shorts.desisins.com/wp-content/uploads/2023/04/cropped-favicon-2-32x32.png"
+    iconUrl = "https://krx18.com/wp-content/uploads/2022/10/krx18B.png"
 }

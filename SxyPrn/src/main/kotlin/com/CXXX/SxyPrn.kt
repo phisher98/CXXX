@@ -9,7 +9,6 @@ import com.lagradost.cloudstream3.utils.httpsify
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.runAllAsync
 
 class SxyPrn : MainAPI() {
     override var mainUrl = "https://sxyprn.com"
@@ -121,26 +120,10 @@ class SxyPrn : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data).document
-        runAllAsync(
-            {
-                document.select("div.post_el_wrap a.extlink").amap {
-                    loadExtractor(it.attr("href"), "", subtitleCallback, callback)
-                }
-            },
-            {
-                val torrentLink = document.select("a.mpc_btn").attr("href")
-                val doc = app.get(torrentLink).document
-                val magnetLink = doc.select("a.md_btn").attr("href")
-                callback.invoke(
-                    newExtractorLink(
-                        "$name[Magnet]",
-                        "$name[Magnet]",
-                        magnetLink,
-                        ExtractorLinkType.MAGNET
-                    )
-                )
-            },
-        )
+        document.select("div.post_el_wrap a.extlink").amap {
+            loadExtractor(it.attr("href"), "", subtitleCallback, callback)
+        }
+
         // val parsed = AppUtils.parseJson<Map<String, String>>(
         //     document.select("span.vidsnfo").attr("data-vnfo")
         // )

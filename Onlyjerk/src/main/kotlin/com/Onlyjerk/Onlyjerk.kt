@@ -73,7 +73,7 @@ class Onlyjerk : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
 
-        document.select(".player-wrap > iframe").amap {
+        document.select(".player-wrap > iframe,.tabcontent > iframe").amap {
             loadExtractor(
                 it.attr("data-src"),
                 referer = data,
@@ -81,6 +81,17 @@ class Onlyjerk : MainAPI() {
                 callback
             )
         }
+
+        document.select(".button_choice_server").amap {
+            val url = it.attr("onclick").substringAfter("'").substringBefore("'")
+            loadExtractor(
+                url,
+                referer = data,
+                subtitleCallback,
+                callback
+            )
+        }
+
         return true
     }
 }

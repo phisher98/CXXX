@@ -93,8 +93,8 @@ class NetflavProvider : MainAPI() {
         val link = "https://" + document.select("script").findLast { it.data().contains(",\"src\":\"https://") }?.data()?.substringAfter(",\"src\":\"https://")?.substringBefore("\"") ?: ""
         val poster = document.selectFirst("meta[property=og:image]")?.attr("content")
         val year = document.selectFirst("#video-details > div:nth-child(4) > div:nth-child(2) > div.videodetail_2_field_values")?.text()?.split("-")?.get(0)?.toIntOrNull()
-        val actors = document.select("#video-details > div:nth-child(4) > div:nth-child(3) a.videocoverheader_field_values").map { it.text() }
-        val tags = document.select("#video-details > div:nth-child(4) > div:nth-child(4) a.videodetail_2_field_values").map { it.text() }
+        val actors = document.select("a[href^='/all?actress=']").map { it.text() }
+        val tags = document.select("a[href^='/all?genre=']").map { it.text() }
         val recommendations = app.get("https://netflav5.com/api98/video/getRelatedVideo?videoId=${url.substringAfter("?id=")}", referer = "$mainUrl/", cookies = cookies)
             .parsedSafe<Response>()?.result?.docs?.mapNotNull { it ->
                 val posterUrl = it.preview_hp
@@ -112,26 +112,25 @@ class NetflavProvider : MainAPI() {
         }
     }
 
-    override suspend fun loadLinks(
-        data: String,
-        isCasting: Boolean,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ): Boolean {
+    override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data, referer = "$mainUrl/").document
         val response = document.select("script").find { it.data().contains("eval(function(p,a,c,k,e,d)") }?.data()?.let { getAndUnpack(it) } ?: ""
-        val link = response.substringAfter("[{file:\"").substringBefore("\"")
-        callback.invoke(
-            newExtractorLink(
-                source = name,
-                name = name,
-                url = link,
-                ExtractorLinkType.M3U8
-            ) {
-                this.referer = "$data/"
-                this.quality = Qualities.Unknown.value
+        listOf("hls4", "hls2").forEach { key ->
+            val link = response.substringAfter("\"$key\":\"").substringBefore("\"")
+            if (link.isNotEmpty()) {
+                callback.invoke(
+                    newExtractorLink(
+                        name,
+                        "$name [$key]",
+                        fixUrl(link, getBaseUrl(data)),
+                        type = ExtractorLinkType.M3U8
+                    ) {
+                        this.referer = "$data/"
+                        this.quality = Qualities.Unknown.value
+                    }
+                )
             }
-        )
+        }
 
         return true
     }

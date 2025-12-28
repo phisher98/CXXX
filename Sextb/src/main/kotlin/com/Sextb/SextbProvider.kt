@@ -18,20 +18,19 @@ class SextbProvider : MainAPI() {
     private val ajaxUrl = "$mainUrl/ajax/player"
 
     override val mainPage = mainPageOf(
-            "/amateur" to "Amateur",
-            "/censored" to "Censored",
-            "/uncensored" to "Uncensord",
-            "/subtitle" to "English Subtitled"
-        )
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-            val document = app.get("$mainUrl${request.data}/pg-$page").document
-            val responseList  = document.select(".tray-item").mapNotNull { it.toSearchResult() }
-            return newHomePageResponse(HomePageList(request.name, responseList, isHorizontalImages = false),hasNext = true)
+        "/amateur" to "Amateur",
+        "/censored" to "Censored",
+        "/uncensored" to "Uncensord",
+        "/subtitle" to "English Subtitled"
+    )
 
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        val document = app.get("$mainUrl${request.data}/pg-$page").document
+        val responseList  = document.select(".tray-item").mapNotNull { it.toSearchResult() }
+        return newHomePageResponse(HomePageList(request.name, responseList, isHorizontalImages = false),hasNext = true)
     }
 
-    private fun getRequestBody (episode: String, filmId: String) : FormBody
-    {
+    private fun getRequestBody (episode: String, filmId: String) : FormBody {
         return FormBody.Builder()
             .addEncoded("episode", episode)
             .addEncoded("filmId", filmId)
@@ -47,37 +46,19 @@ class SextbProvider : MainAPI() {
         }
     }
 
-    override suspend fun search(query: String): List<SearchResponse> {
-
-        val searchResponse = mutableListOf<SearchResponse>()
-
-        for (i in 1..5) {
-            val document = app.get("$mainUrl/search/$query/pg-$i").document
-            //val document = app.get("${mainUrl}/page/$i/?s=$query").document
-
-            val results = document.select(".tray-item").mapNotNull { it.toSearchResult() }
-
-            if (!searchResponse.containsAll(results)) {
-                searchResponse.addAll(results)
-            } else {
-                break
-            }
-
-            if (results.isEmpty()) break
-        }
-
-        return searchResponse
-
+    override suspend fun search(query: String, page: Int): SearchResponseList? {
+        val document = app.get("$mainUrl/search/${query.replace(" ", "-")}/pg-$page").document
+        val results = document.select(".tray-item").mapNotNull { it.toSearchResult() }
+        val hasNext = if(results.isEmpty()) false else true
+        return newSearchResponseList(results, hasNext)
     }
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
-
         val title = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString().replace("| PornHoarder.tv","")
         val poster = fixUrlNull(document.selectFirst("[property='og:image']")?.attr("content"))
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
     
-
         return newMovieLoadResponse(title, url, TvType.NSFW, url) {
             this.posterUrl = poster
             this.plot = description
@@ -95,8 +76,6 @@ class SextbProvider : MainAPI() {
             val finalUrl = iframeSrc.replace("\\\"","").replace("\\/","\\").substringBefore("?")
             loadExtractor(finalUrl,subtitleCallback,callback)
         }
-
-
         return true
     }
 }

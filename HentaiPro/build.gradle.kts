@@ -7,7 +7,7 @@ cloudstream {
     // All of these properties are optional, you can safely remove them
 
     description = "Watch Anime From Hentai.pro"
-    authors = listOf("KillerDogeEmpire")
+    authors = listOf("Phisher98")
 
     /**
      * Status int as the following:

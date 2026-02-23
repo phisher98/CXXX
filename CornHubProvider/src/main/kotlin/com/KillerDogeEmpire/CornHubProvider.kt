@@ -1,6 +1,5 @@
-package com.KillerDogeEmpire
+package com.Phisher98
 
-import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*

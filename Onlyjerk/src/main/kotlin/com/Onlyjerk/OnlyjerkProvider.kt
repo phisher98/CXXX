@@ -8,8 +8,6 @@ import android.content.Context
 class OnlyjerkProvider: Plugin() {
     override fun load(context: Context) {
         registerMainAPI(Onlyjerk())
-        registerExtractorAPI(Dooodster())
-        registerExtractorAPI(Listeamed())
-        registerExtractorAPI(Beamed())
+        registerExtractorAPI(Luluvids())
     }
 }

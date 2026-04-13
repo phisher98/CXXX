@@ -12,6 +12,13 @@ buildscript {
         maven("https://jitpack.io")
     }
 
+    configurations.all {
+        resolutionStrategy.dependencySubstitution {
+            substitute(module("com.github.vidstige:jadb:master-SNAPSHOT"))
+                .using(module("com.github.vidstige:jadb:v1.2.1"))
+        }
+    }
+
     dependencies {
         classpath("com.android.tools.build:gradle:9.1.0")
         classpath("com.github.recloudstream:gradle:-SNAPSHOT")

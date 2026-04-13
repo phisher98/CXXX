@@ -38,8 +38,10 @@ jobs:
           distribution: "temurin"
           java-version: 17
 
-      - name: Setup Android SDK
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: false
 
       - name: Build Plugins
         run: |

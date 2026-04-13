@@ -1,5 +1,5 @@
 dependencies {
-    implementation("com.google.android.material:material:1.12.0")
+    implementation("com.google.android.material:material:1.13.0")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
 }
 // use an integer for version numbers
@@ -23,7 +23,7 @@ cloudstream {
 
     tvTypes = listOf("NSFW")
 
-    requiresResources = true
+
     language = "en"
 
     // random cc logo i found

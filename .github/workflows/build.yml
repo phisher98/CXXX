@@ -41,9 +41,6 @@ jobs:
       - name: Setup Android SDK
         uses: gradle/actions/setup-gradle@v5
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v4
-
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src

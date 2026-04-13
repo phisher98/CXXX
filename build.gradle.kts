@@ -2,6 +2,7 @@ import com.lagradost.cloudstream3.gradle.CloudstreamExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import com.android.build.api.dsl.LibraryExtension
 import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.kotlin.dsl.register
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 
@@ -10,6 +11,13 @@ buildscript {
         google()
         mavenCentral()
         maven("https://jitpack.io")
+    }
+
+    configurations.all {
+        resolutionStrategy.dependencySubstitution {
+            substitute(module("com.github.vidstige:jadb:master-SNAPSHOT"))
+                .using(module("com.github.vidstige:jadb:v1.2.1"))
+        }
     }
 
     dependencies {

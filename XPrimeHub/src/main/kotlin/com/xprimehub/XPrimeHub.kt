@@ -73,7 +73,7 @@ class XPrimeHub : MainAPI() {
         return response?.hits?.map { hit ->
             val doc = hit.document
 
-            newMovieSearchResponse(doc.post_title, doc.permalink, TvType.Movie
+            newMovieSearchResponse(doc.post_title, doc.permalink, TvType.NSFW
             ) {
                 this.posterUrl = doc.post_thumbnail
             }
@@ -142,7 +142,7 @@ class XPrimeHub : MainAPI() {
             }
         }
 
-        return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodesList) {
+        return newTvSeriesLoadResponse(title, url, TvType.NSFW, episodesList) {
             this.posterUrl = poster
             this.backgroundPosterUrl = bgposter
             this.plot = description

@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.utils.*
 import kotlinx.coroutines.runBlocking
 import org.jsoup.nodes.Element
 import java.net.URI
+import java.text.Normalizer
 
 class XPrimeHub : MainAPI() {
     override var mainUrl: String = runBlocking {
@@ -42,7 +43,7 @@ class XPrimeHub : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get("$mainUrl/${request.data}/page/$page").document
-        val home     = document.select(".elementor-loop-container .e-loop-item").mapNotNull { it.toSearchResult() }
+        val home     = document.select("div.movies-grid a").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
             list    = HomePageList(
@@ -55,19 +56,28 @@ class XPrimeHub : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title     =this.select("h3").text().substringAfter("[18+]").substringBefore("UNRATED")
-        val href      =this.select("a").attr("href")
+        val title     =this.select("p.poster-title").text().substringAfter("[18+]").substringBefore("UNRATED")
+        val href      =this.attr("href")
         val posterUrl = this.select("img").attr("data-lazy-src").takeIf { it.startsWith("http") }
             ?: this.select("img").attr("src").takeIf { it.startsWith("http") }
+        val quality = getSearchQuality(this.select("span.poster-quality").text())
         return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
+            this.quality = quality
         }
     }
 
-    override suspend fun search(query: String,page: Int): SearchResponseList {
-        val document = app.get("${mainUrl}/page/$page/?s=$query").document
-        val results = document.select(".elementor-loop-container .e-loop-item").mapNotNull { it.toSearchResult() }
-        return results.toNewSearchResponseList()
+    override suspend fun search(query: String, page: Int): SearchResponseList? {
+        val response = app.get("$mainUrl/search.php?q=$query&page=$page").parsedSafe<Search>()
+
+        return response?.hits?.map { hit ->
+            val doc = hit.document
+
+            newMovieSearchResponse(doc.post_title, doc.permalink, TvType.Movie
+            ) {
+                this.posterUrl = doc.post_thumbnail
+            }
+        }?.toNewSearchResponseList()
     }
 
     override suspend fun load(url: String): LoadResponse {
@@ -340,3 +350,54 @@ class VCloud : ExtractorApi() {
         }.getOrDefault("")
     }
 }
+
+fun getSearchQuality(check: String?): SearchQuality? {
+    val s = check ?: return null
+    val u = Normalizer.normalize(s, Normalizer.Form.NFKC).lowercase()
+    val patterns = listOf(
+        Regex("\\b(4k|ds4k|uhd|2160p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.FourK,
+
+        // CAM / THEATRE SOURCES FIRST
+        Regex("\\b(hdts|hdcam|hdtc)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HdCam,
+        Regex("\\b(camrip|cam[- ]?rip)\\b", RegexOption.IGNORE_CASE) to SearchQuality.CamRip,
+        Regex("\\b(cam)\\b", RegexOption.IGNORE_CASE) to SearchQuality.Cam,
+
+        // WEB / RIP
+        Regex("\\b(web[- ]?dl|webrip|webdl)\\b", RegexOption.IGNORE_CASE) to SearchQuality.WebRip,
+
+        // BLURAY
+        Regex("\\b(bluray|bdrip|blu[- ]?ray)\\b", RegexOption.IGNORE_CASE) to SearchQuality.BlueRay,
+
+        // RESOLUTIONS
+        Regex("\\b(1440p|qhd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.BlueRay,
+        Regex("\\b(1080p|fullhd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HD,
+        Regex("\\b(720p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.SD,
+
+        // GENERIC HD LAST
+        Regex("\\b(hdrip|hdtv)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HD,
+
+        Regex("\\b(dvd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.DVD,
+        Regex("\\b(hq)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HQ,
+        Regex("\\b(rip)\\b", RegexOption.IGNORE_CASE) to SearchQuality.CamRip
+    )
+
+
+    for ((regex, quality) in patterns) if (regex.containsMatchIn(u)) return quality
+    return null
+}
+
+data class Search(
+    val hits: List<Hit>
+)
+
+data class Hit(
+    val document: DocumentData
+)
+
+data class DocumentData(
+    val id: String,
+    val post_title: String,
+    val post_thumbnail: String?,
+    val permalink: String,
+    val post_date: String?
+)

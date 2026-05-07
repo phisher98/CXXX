@@ -24,6 +24,9 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import org.json.JSONObject
+import org.jsoup.Jsoup
+import com.lagradost.api.Log
 
 class JAVHDProvider : MainAPI() {
     override var mainUrl              = "https://javhd.today"
@@ -40,20 +43,21 @@ class JAVHDProvider : MainAPI() {
             "/recent/" to "Latest Upadates",
             "/popular/today/" to "Most View Today",
             "/popular/week/" to "Most View Week",
-            "/jav-sub/" to "Jav Subbed",
-            "/jav-sub/popular/year/" to "Most Viewed Jav Subbed",
-            "/uncensored-jav/" to "Uncensored",
-            "/reducing-mosaic/" to "Reduced Mosaic",
-            "/amateur/" to "Amateur"
+            "$mainUrl/jav-sub/recent/%d/?ajax=1" to "Recent Jav Subbed",
+            "$mainUrl/jav-sub/popular/year/%d/?ajax=1" to "Most Viewed Jav Subbed",
+            "$mainUrl/uncensored-jav/recent/%d/?ajax=1" to "Rencent Uncensored",
+            "$mainUrl/reducing-mosaic/recent/%d/?ajax=1" to "Recent Reduced Mosaic",
         )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-            val document = if(page == 1)
-            {
+            val document = if(request.data.contains("?ajax=1")) {
+                val json = app.get(request.data.format(page+1)).text
+                val html = JSONObject(json).optString("html", "")
+                Jsoup.parse(html)
+            } else if(page == 1) {
                 app.get("$mainUrl${request.data}").document
             }
-            else
-            {
+            else {
                 if(request.name == "Jav Subbed" || request.name == "Uncensored" || request.name == "Reduced Mosaic" || request.name == "Amateur")
                 {
                     app.get("$mainUrl${request.data}recent/$page").document
@@ -63,6 +67,7 @@ class JAVHDProvider : MainAPI() {
                     app.get("$mainUrl${request.data}$page").document
                 }
             }
+
             val responseList  = document.select("div.video").mapNotNull { it.toSearchResult() }
             return newHomePageResponse(HomePageList(request.name, responseList, isHorizontalImages = false),hasNext = true)
 
@@ -78,7 +83,9 @@ class JAVHDProvider : MainAPI() {
     }
 
     override suspend fun search(query: String, page: Int): SearchResponseList {
-        val document = app.get("$mainUrl/search/video/?s=$query&page=$page").document
+        val json = app.get("$mainUrl/search/video/?s=$query&page=$page&ajax=1").text
+        val html = JSONObject(json).getString("html")
+        val document = Jsoup.parse(html)
         val results = document.select("div.video").mapNotNull { it.toSearchResult() }
         val hasNext = if (results.isEmpty()) false else true
         return newSearchResponseList(results, hasNext)

@@ -21,5 +21,4 @@ cloudstream {
     )
     iconUrl = "https://www.google.com/s2/favicons?domain=https://xnhau.im&sz=256"
 
-    isCrossPlatform = true
 }

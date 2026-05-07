@@ -20,6 +20,4 @@ cloudstream {
         "NSFW"
     )
     iconUrl = "https://www.google.com/s2/favicons?domain=https://www.xnxx.com&sz=256"
-
-    isCrossPlatform = true
 }

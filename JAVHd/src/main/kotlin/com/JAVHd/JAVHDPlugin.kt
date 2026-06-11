@@ -14,5 +14,7 @@ class JAVHDPlugin: Plugin() {
         registerExtractorAPI(Turbovid())
         registerExtractorAPI(MyCloudZ())
         registerExtractorAPI(Cloudwish())
+        registerExtractorAPI(TurbovidVip())
+        registerExtractorAPI(Streambeast())
     }
 }

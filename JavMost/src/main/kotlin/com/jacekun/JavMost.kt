@@ -1,159 +1,218 @@
 package com.jacekun
 
-import com.lagradost.cloudstream3.MainAPI
-import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
+import org.json.JSONObject
 
 class JavMost : MainAPI() {
-    private val DEV = "DevDebug"
     private val globaltvType = TvType.NSFW
 
     override var name = "JavMost"
-    override var mainUrl = "https://www5.javmost.com"
+    override var mainUrl = "https://www.javmost.ws"
     override val supportedTypes = setOf(TvType.NSFW)
-    override val hasDownloadSupport = false
+    override val hasDownloadSupport = true
     override val hasMainPage = true
     override val hasQuickSearch = false
+    override val vpnStatus = VPNStatus.MightBeNeeded
 
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val document = app.get(mainUrl).document
+        val url = if (page <= 1) "$mainUrl/" else "$mainUrl/page/$page/"
+        val document = app.get(url).document
         val all = ArrayList<HomePageList>()
 
-        val mainbody = document.getElementsByTag("body")
-            ?.select("div#page-container > div#content > div#content-update > div")
-            ?.select("div.col-md-4.col-sm-6")
-        val title = "Homepage"
-        // Fetch list of items and map
-        val elements: List<SearchResponse> = mainbody!!.map {
+        val cards = document.select("div#content-update div.card, div.card").mapNotNull { card ->
+            val linkA = card.selectFirst("center > a, div.card-block > a, a") ?: return@mapNotNull null
+            val href = fixUrlNull(linkA.attr("href")) ?: return@mapNotNull null
 
-            val inner = it.select("div.card")
-            val linkA = inner.select("div.card-block > a")
-            val link = linkA?.firstOrNull()?.attr("href") ?: ""
-            val name = listOfNotNull(linkA?.firstOrNull()?.text(), linkA?.getOrNull(1)?.text()).joinToString(" ")
-            //Log.i(DEV, "Result => (name and link) ${name} / ${link}")
-            val image = inner?.select("center > a > img")?.attr("data-src").orEmpty().ifBlank {
-                inner.select("center > a > img")?.attr("src")
-            }.run {
-                if (this.equals("http")) {
-                    inner?.select("center > a > img")?.attr("src")
-                } else {
-                    this
-                }
-            }
-            //Log.i(DEV, "Result => (image) ${image}")
-            val year = inner.select("div.card-block > p")?.text()
-                ?.substring(0, 20)?.replace("Release", "")?.trim()
-                ?.substring(0, 4)?.toIntOrNull()
+            val title = card.selectFirst("h1.card-title, h4.card-title, a[alt]")?.text()?.takeIf { it.isNotBlank() }
+                ?: linkA.attr("alt").takeIf { it.isNotBlank() }
+                ?: return@mapNotNull null
 
-            newMovieSearchResponse(
-                name = name,
-                url = link,
-                type = globaltvType,
-            ).apply {
-                //this.apiName = this@JavMost.name
+            val img = card.selectFirst("img")
+            val image = fixUrlNull(
+                img?.attr("data-src")?.takeIf { it.isNotBlank() }
+                    ?: img?.attr("src")?.takeIf { it.isNotBlank() && !it.startsWith("data:") }
+            )
+
+            val yearText = card.selectFirst("div.card-block p")?.text()
+            val year = yearText?.let { Regex("""\b(19\d\d|20\d\d)\b""").find(it)?.value?.toIntOrNull() }
+
+            newMovieSearchResponse(title, href, globaltvType) {
                 this.posterUrl = image
                 this.year = year
-                this.id = null
             }
+        }.distinctBy { it.url }
+
+        if (cards.isNotEmpty()) {
+            all.add(HomePageList("Latest Updates", cards, isHorizontalImages = true))
         }
 
-        all.add(
-            HomePageList(
-                title, elements
-            )
-        )
-
-        return newHomePageResponse(all)
+        return newHomePageResponse(all, hasNext = cards.isNotEmpty())
     }
 
-    override suspend fun search(query: String): List<SearchResponse>? {
-        val document = app.get("$mainUrl/search/${query}/").document
-        val mainbody = document.getElementsByTag("body")
-            .select("div#page-container > div#content > div#content-update > div")
-            .select("div.col-md-4.col-sm-6")
-        //Log.i(DEV, "Result => $document")
-        if (mainbody != null) {
-            return mainbody.map {
-                val content = it.select("div.card").firstOrNull()
-                val linkImg = content?.select("a")?.firstOrNull()
+    override suspend fun search(query: String): List<SearchResponse> {
+        val searchResponse = mutableListOf<SearchResponse>()
+        val encoded = query.trim().replace(" ", "+")
 
-                val href = fixUrl(linkImg?.attr("href") ?: "")
-                var image = linkImg?.select("img")?.attr("data-src")?.trim('\'')
-                if (image != null) { image = fixUrl(image) }
-                //Log.i(DEV, "Result => (link) ${href}, (img) ${image}")
-                val titleContent = content?.select("div.card-block > a")
-                //Log.i(DEV, "Result => (titleContent) ${titleContent}")
-                val title = when (titleContent?.size) {
-                    2 -> listOfNotNull(
-                        titleContent[0]?.text(),
-                        titleContent[1]?.text()
-                    ).joinToString(" ")
-                    1 -> titleContent[0]?.text()
-                    else -> "<No Title found>"
-                } ?: "<No Title found>"
-                //Log.i(DEV, "Result => (title) ${title}")
-                var year: Int? = null
-                val yearP = content?.select("div.card-block")?.firstOrNull()?.select("p")
-                //Log.i(DEV, "Result => (yearP) ${yearP}")
-                val yearElem = when(yearP != null) {
-                    true -> yearP.filter { yearit -> yearit.text().contains("Release") == true }
-                    false -> null
-                }
-                val yearString = when (yearElem?.size!! > 0) {
-                    true -> yearElem.get(0)?.text()?.substring(0, 22)?.trim()
-                        ?.replace("Release", "")?.trim()
-                    false -> null
-                }
-                //Log.i(DEV, "Result => (yearString) ${yearString}")
-                if (yearString != null)  {
-                    val maxSize = if (yearString.length > 4) { 4 } else { yearString.length }
-                    year = yearString.substring(0, maxSize).toIntOrNull()
-                }
-                //Log.i(DEV, "Result => (year) ${year}")
+        for (page in 1..3) {
+            val url = if (page == 1) "$mainUrl/search/$encoded/" else "$mainUrl/search/$encoded/page/$page/"
+            val document = app.get(url).document
+            val results = document.select("div#content-update div.card, div.card").mapNotNull { card ->
+                val linkA = card.selectFirst("center > a, div.card-block > a, a") ?: return@mapNotNull null
+                val href = fixUrlNull(linkA.attr("href")) ?: return@mapNotNull null
 
-                newMovieSearchResponse(
-                    name = title,
-                    url = href,
-                    type = globaltvType,
-                ).apply {
-                    //this.apiName = this@JavMost.name
+                val title = card.selectFirst("h1.card-title, h4.card-title, a[alt]")?.text()?.takeIf { it.isNotBlank() }
+                    ?: linkA.attr("alt").takeIf { it.isNotBlank() }
+                    ?: return@mapNotNull null
+
+                val img = card.selectFirst("img")
+                val image = fixUrlNull(
+                    img?.attr("data-src")?.takeIf { it.isNotBlank() }
+                        ?: img?.attr("src")?.takeIf { it.isNotBlank() && !it.startsWith("data:") }
+                )
+
+                val yearText = card.selectFirst("div.card-block p")?.text()
+                val year = yearText?.let { Regex("""\b(19\d\d|20\d\d)\b""").find(it)?.value?.toIntOrNull() }
+
+                newMovieSearchResponse(title, href, globaltvType) {
                     this.posterUrl = image
                     this.year = year
                 }
             }
+            val unique = results.filterNot { item -> searchResponse.any { it.url == item.url } }
+            if (unique.isEmpty()) break
+            searchResponse.addAll(unique)
         }
-        return null
+
+        return searchResponse
     }
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
-        //Log.i(DEV, "Url => ${url}")
-        val body = document.getElementsByTag("head")
+        val html = document.html()
 
-        //Log.i(DEV, "Result => ${body}")
-        var poster = body.select("meta[property=og:image]").firstOrNull()?.attr("content")
-        if (poster != null) { poster = fixUrl(poster) }
-        //Log.i(DEV, "Result (image) => ${poster}")
-        val title = body.select("meta[property=og:title]").firstOrNull()?.attr("content") ?: "<No Title>"
-        val descript = body.select("meta[property=og:description]").firstOrNull()?.attr("content") ?: "<No Synopsis found>"
-        //Log.i(DEV, "Result => ${descript}")
-        val streamUrl = ""
-        val year = null
+        val poster = fixUrlNull(
+            document.selectFirst("meta[property='og:image']")?.attr("content")
+                ?: document.selectFirst("div.card-block img, img.card-img-top")?.attr("src")
+        )
+        val title = document.selectFirst("meta[property='og:title']")?.attr("content")?.trim()
+            ?: document.title().substringBefore(" - Watch").trim()
+        val descript = document.selectFirst("meta[property='og:description']")?.attr("content")?.trim()
+
+        val tags = document.select("a[href*='/genre/'], a[href*='/tag/']")
+            .map { it.text().trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+
+        val actors = document.select("a[href*='/star/'], a[href*='/actress/']")
+            .map { it.text().trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+
+        val recommendations = document.select("div.card")
+            .mapNotNull { card ->
+                val linkA = card.selectFirst("center > a, a") ?: return@mapNotNull null
+                val href = fixUrlNull(linkA.attr("href")) ?: return@mapNotNull null
+                val name = card.selectFirst("h1, h4, a[alt]")?.text() ?: return@mapNotNull null
+                newMovieSearchResponse(name, href, globaltvType)
+            }
+            .distinctBy { it.url }
+            .filter { it.url != url }
+
+        // Fetch streaming embeds using JavMost AJAX endpoint
+        val streamUrls = mutableListOf<String>()
+        runCatching {
+            val y1 = Regex("""var\s+YWRzMQo\s*=\s*'([^']+)'""").find(html)?.groupValues?.get(1)
+            val y2 = Regex("""var\s+YWRzMg\s*=\s*'([^']+)'""").find(html)?.groupValues?.get(1)
+            val y4 = Regex("""var\s+YWRzNA\s*=\s*'([^']+)'""").find(html)?.groupValues?.get(1)
+            val y5 = Regex("""var\s+YWRzNQ\s*=\s*'([^']+)'""").find(html)?.groupValues?.get(1)
+            val y6 = Regex("""var\s+YWRzNg\s*=\s*'([^']+)'""").find(html)?.groupValues?.get(1)
+
+            val endpointPath = Regex("""url_source\s*=\s*YREdIr\s*\+\s*'([^']+)'""").find(html)?.groupValues?.get(1) ?: "ri3123o235r/"
+            val endpoint = "$mainUrl/$endpointPath"
+
+            if (y1 != null && y2 != null && y4 != null && y5 != null && y6 != null) {
+                val ajaxRes = app.post(
+                    endpoint,
+                    headers = mapOf(
+                        "Referer" to url,
+                        "X-Requested-With" to "XMLHttpRequest"
+                    ),
+                    data = mapOf(
+                        "group" to y2,
+                        "part" to "1",
+                        "code" to y4,
+                        "code2" to y5,
+                        "code3" to y6,
+                        "value" to y1,
+                        "sound" to "av"
+                    )
+                ).text
+
+                val jsonObj = JSONObject(ajaxRes)
+                val dataArr = jsonObj.optJSONArray("data")
+                if (dataArr != null) {
+                    for (i in 0 until dataArr.length()) {
+                        val link = dataArr.optString(i)
+                        if (link.isNotBlank()) {
+                            streamUrls.add(link)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Also check iframes in page
+        document.select("iframe[src]").forEach { iframe ->
+            val src = fixUrlNull(iframe.attr("src")) ?: return@forEach
+            if (!src.contains("google") && !src.contains("facebook")) {
+                streamUrls.add(src)
+            }
+        }
+
         return newMovieLoadResponse(
             name = title,
             url = url,
             type = globaltvType,
-            dataUrl = streamUrl,
+            dataUrl = streamUrls.distinct().toJson(),
         ).apply {
             this.apiName = this@JavMost.name
             this.posterUrl = poster
-            this.year = year
             this.plot = descript
-            this.comingSoon = true
+            this.tags = tags
+            this.recommendations = recommendations
+            addActors(actors)
         }
+    }
+
+    override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        val urls = runCatching { data.fromJson<List<String>>() }.getOrNull()
+            ?: if (data.startsWith("http")) listOf(data) else emptyList()
+
+        for (link in urls) {
+            runCatching {
+                loadExtractor(link, "$mainUrl/", subtitleCallback, callback)
+            }
+        }
+        return true
+    }
+
+    companion object {
+        private val gson = Gson()
+        private inline fun <reified T> String.fromJson(): T =
+            gson.fromJson(this, object : TypeToken<T>() {}.type)
     }
 }

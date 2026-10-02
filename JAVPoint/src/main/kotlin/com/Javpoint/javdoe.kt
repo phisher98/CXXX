@@ -1,6 +1,5 @@
 package com.Javpoint
 
-//import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -24,43 +23,34 @@ class Javdoe : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        if (page == 1) {
-            val document = app.get("$mainUrl/${request.data}/").document
-            //Log.d("Test","$document")
-            val home = document.select("ul.videos > li")
-                .mapNotNull { it.toSearchResult() }
-            //Log.d("Test", "$home")
-            return newHomePageResponse(
-                list = HomePageList(
-                    name = request.name,
-                    list = home,
-                    isHorizontalImages = false
-                ),
-                hasNext = true
-            )
-        }
-        else {
-            val document = app.get("$mainUrl/${request.data}/$page/").document
-            //Log.d("Test","$document")
-            val home = document.select("ul.videos > li")
-                .mapNotNull { it.toSearchResult() }
-            //Log.d("Test", "$home")
-            return newHomePageResponse(
-                list = HomePageList(
-                    name = request.name,
-                    list = home,
-                    isHorizontalImages = false
-                ),
-                hasNext = true
-            )
-        }
+        val url = if (page == 1) "$mainUrl/${request.data}/" else "$mainUrl/${request.data}/$page/"
+        val document = app.get(url).document
+        val home = document.select("ul.videos > li")
+            .mapNotNull { it.toSearchResult() }
+
+        return newHomePageResponse(
+            list = HomePageList(
+                name = request.name,
+                list = home.distinctBy { it.url },
+                isHorizontalImages = false
+            ),
+            hasNext = home.isNotEmpty()
+        )
     }
 
-    private fun Element.toSearchResult(): SearchResponse {
-        val title     = this.select("div.video > a").attr("title").trim()
-        val href      = fixUrl(this.select("div.video > a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("div.video > a > div > img").attr("data-src"))
-        //Log.d("Test","$posterUrl")
+    private fun Element.toSearchResult(): SearchResponse? {
+        val linkElem = this.selectFirst("div.video > a, a[href*='/video/'], a") ?: return null
+        val href = fixUrlNull(linkElem.attr("href")) ?: return null
+        val title = linkElem.attr("title").takeIf { it.isNotBlank() }
+            ?: this.selectFirst("span.title, h3, h2")?.text()
+            ?: return null
+
+        val img = this.selectFirst("img")
+        val posterUrl = fixUrlNull(
+            img?.attr("data-src")?.takeIf { it.isNotBlank() }
+                ?: img?.attr("src")?.takeIf { it.isNotBlank() }
+        )
+
         return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
@@ -68,19 +58,14 @@ class Javdoe : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
+        val encoded = query.trim().replace(" ", "+")
 
-        for (i in 1..2) {
-            val document = app.get("${mainUrl}/search/video/?s=$query&page=$i").document
-
+        for (i in 1..3) {
+            val document = app.get("$mainUrl/search/video/?s=$encoded&page=$i").document
             val results = document.select("ul.videos > li").mapNotNull { it.toSearchResult() }
-
-            if (!searchResponse.containsAll(results)) {
-                searchResponse.addAll(results)
-            } else {
-                break
-            }
-
-            if (results.isEmpty()) break
+            val unique = results.filterNot { item -> searchResponse.any { it.url == item.url } }
+            if (unique.isEmpty()) break
+            searchResponse.addAll(unique)
         }
 
         return searchResponse
@@ -89,43 +74,71 @@ class Javdoe : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
-        val title       = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString()
-        val poster = document.selectFirst("meta[property=og:image]")?.attr("content")?.trim().toString()
+        val title = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim()
+            ?: document.title().substringBefore(" - JavDoe").trim()
+        val poster = fixUrlNull(document.selectFirst("meta[property='og:image']")?.attr("content"))
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
-        val recommendations =
-            document.select("ul.videos.related >  li").map {
-                val recomtitle = it.selectFirst("div.video > a")?.attr("title")?.trim().toString()
-                val recomhref = it.selectFirst("div.video > a")?.attr("href").toString()
-                val recomposterUrl = it.select("div.video > a > div > img").attr("src")
-                val recomposter="https://javdoe.sh$recomposterUrl"
-                newAnimeSearchResponse(recomtitle, recomhref, TvType.NSFW) {
-                    this.posterUrl = recomposter
-                }
-            }
+
+        val tags = document.select("div.tags a, a[href*='/tag/'], a[href*='/category/']")
+            .map { it.text().trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+
+        val recommendations = document.select("ul.videos.related > li, ul.videos > li")
+            .mapNotNull { it.toSearchResult() }
+            .distinctBy { it.url }
+            .filter { it.url != url }
+
         return newMovieLoadResponse(title, url, TvType.NSFW, url) {
             this.posterUrl = poster
-            this.plot      = description
-            this.recommendations=recommendations
+            this.plot = description
+            this.tags = tags
+            this.recommendations = recommendations
         }
     }
 
-    @Suppress("NAME_SHADOWING")
-    override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+    override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
         val document = app.get(data).document
         val sourcelist = mutableListOf<String>()
-        val onclickValue = document.select(".button_choice_server").attr("onclick")
-        val playEmbedContent = Regex("'(.*?)'").find(onclickValue)?.groupValues?.get(1)
-        //Log.d("Testlink","$playEmbedContent")
-        val sources= app.get(playEmbedContent.toString()).document
-        val liElements = sources.select("li.button_choice_server")
-        for (liElement in liElements) {
-            val onclickValue = liElement.attr("onclick")
-            val url = onclickValue.substringAfter("playEmbed('").substringBefore("')")
-            println("${liElement.text()}: $url")
-            sourcelist.add(url)
+
+        val onclickValue = document.selectFirst(".button_choice_server")?.attr("onclick")
+        if (!onclickValue.isNullOrBlank()) {
+            val playEmbedContent = Regex("'(https?://[^']+)'").find(onclickValue)?.groupValues?.getOrNull(1)
+                ?: Regex("'(.*?)'").find(onclickValue)?.groupValues?.getOrNull(1)
+
+            if (!playEmbedContent.isNullOrBlank()) {
+                runCatching {
+                    val embedUrl = fixUrl(playEmbedContent)
+                    val sources = app.get(embedUrl).document
+                    val liElements = sources.select("li.button_choice_server")
+                    for (liElement in liElements) {
+                        val oc = liElement.attr("onclick")
+                        val link = oc.substringAfter("playEmbed('", "").substringBefore("')", "")
+                        if (link.isNotBlank()) {
+                            sourcelist.add(link)
+                        }
+                    }
+                }
+            }
         }
-        sourcelist.forEach {
-            loadExtractor(it,subtitleCallback,callback)
+
+        // Direct iframes in page
+        document.select("iframe[src]").forEach { iframe ->
+            val src = fixUrlNull(iframe.attr("src")) ?: return@forEach
+            if (!src.contains("google") && !src.contains("facebook")) {
+                sourcelist.add(src)
+            }
+        }
+
+        sourcelist.distinct().forEach { link ->
+            runCatching {
+                loadExtractor(link, "$mainUrl/", subtitleCallback, callback)
+            }
         }
         return true
     }

@@ -1,122 +1,38 @@
 package com.CXXX
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 
-data class Posts(
-    val posts: List<PostMain>,
-    val count: Long,
-    val nextCursor: Any?,
+// ── Home page (JSON-LD ItemList) ────────────────────────────────────────────
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class HomePosts(
+    @JsonProperty("@context") val context: String? = null,
+    @JsonProperty("@type")    val type: String? = null,
+    val itemListElement: List<ItemListElement> = emptyList(),
 )
 
-data class PostMain(
-    val id: String,
-    @JsonProperty("mongodb_id")
-    val mongodbId: String?,
-    @JsonProperty("scraping_datetime")
-    val scrapingDatetime: String,
-    @JsonProperty("item_publish_date")
-    val itemPublishDate: String,
-    @JsonProperty("video_title")
-    val videoTitle: String,
-    @JsonProperty("item_id")
-    val itemId: String,
-    val producers: List<String>,
-    val actors: List<String>,
-    val categories: List<String>,
-    val misc: Any?,
-    @JsonProperty("image_details")
-    val imageDetails: List<String>,
-    val views: Long,
-    val like: Long,
-    val dislike: Long,
-    @JsonProperty("video_urls")
-    val videoUrls: Any?,
-    val slug: String,
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class ItemListElement(
+    @JsonProperty("@context") val context: String? = null,
+    @JsonProperty("@type")    val type: String? = null,
+    val position: Long? = null,
+    val name: String = "",
+    val url: String = "",
+    val description: String? = null,
+    val thumbnailUrl: List<String> = emptyList(),
+    val uploadDate: String? = null,
+    val interactionStatistic: InteractionStatistic? = null,
 )
 
-
-data class Load(
-    val post: Post,
-    val urls: List<Url>,
-    val relatedPosts: List<RelatedPost>,
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class InteractionStatistic(
+    @JsonProperty("@type") val type: String? = null,
+    val interactionType: InteractionType? = null,
+    val userInteractionCount: Long? = null,
 )
 
-data class Post(
-    val id: String,
-    @JsonProperty("mongodb_id")
-    val mongodbId: Any?,
-    val actors: List<String>,
-    val categories: List<String>,
-    @JsonProperty("image_details")
-    val imageDetails: List<String>,
-    @JsonProperty("item_publish_date")
-    val itemPublishDate: String,
-    val producers: List<String>,
-    @JsonProperty("video_description")
-    val videoDescription: String,
-    @JsonProperty("video_title")
-    val videoTitle: String,
-    @JsonProperty("video_urls")
-    val videoUrls: VideoUrls,
-    val views: Long,
-    val like: Long,
-    @JsonProperty("is_alive")
-    val isAlive: Boolean,
-    @JsonProperty("scraping_datetime")
-    val scrapingDatetime: String,
-    val slug: String,
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class InteractionType(
+    @JsonProperty("@type") val type: String? = null,
 )
-
-data class VideoUrls(
-    val link: List<List<String>>,
-    val iframe: List<Iframe>,
-)
-
-data class Iframe(
-    val url: String,
-    @JsonProperty("status_code")
-    val statusCode: Long,
-    @JsonProperty("status_text")
-    val statusText: String,
-    @JsonProperty("last_status_check")
-    val lastStatusCheck: String,
-    @JsonProperty("last_status_change")
-    val lastStatusChange: String,
-)
-
-data class Url(
-    val url: String,
-    @JsonProperty("status_code")
-    val statusCode: Long,
-    @JsonProperty("status_text")
-    val statusText: String,
-    @JsonProperty("last_status_check")
-    val lastStatusCheck: String,
-    @JsonProperty("last_status_change")
-    val lastStatusChange: String,
-)
-
-data class RelatedPost(
-    val id: String,
-    @JsonProperty("mongodb_id")
-    val mongodbId: String?,
-    @JsonProperty("scraping_datetime")
-    val scrapingDatetime: String,
-    @JsonProperty("item_publish_date")
-    val itemPublishDate: String,
-    @JsonProperty("video_title")
-    val videoTitle: String,
-    @JsonProperty("item_id")
-    val itemId: String,
-    val producers: List<String>,
-    val actors: List<String>,
-    val categories: List<String>,
-    val misc: List<Any?>,
-    @JsonProperty("image_details")
-    val imageDetails: List<String>,
-    val views: Long,
-    val like: Long,
-    val dislike: Long,
-    val slug: String,
-)
-

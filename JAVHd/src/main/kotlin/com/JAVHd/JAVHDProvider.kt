@@ -20,14 +20,11 @@ import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newSearchResponseList
 import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.runAllAsync
-import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import org.json.JSONObject
-import org.jsoup.Jsoup
-import com.lagradost.api.Log
 
 class JAVHDProvider : MainAPI() {
     override var mainUrl              = "https://javhd.today"
@@ -38,82 +35,135 @@ class JAVHDProvider : MainAPI() {
     override val hasChromecastSupport = true
     override val supportedTypes       = setOf(TvType.NSFW)
     override val vpnStatus            = VPNStatus.MightBeNeeded
-    val subtitleCatUrl = "https://www.subtitlecat.com"
+    private val subtitleCatUrl        = "https://www.subtitlecat.com"
+
     override val mainPage = mainPageOf(
-            "/releaseday/" to "Release Day",
-            "/recent/" to "Latest Upadates",
-            "/popular/today/" to "Most View Today",
-            "/popular/week/" to "Most View Week",
-            "$mainUrl/jav-sub/recent/%d/?ajax=1" to "Recent Jav Subbed",
-            "$mainUrl/jav-sub/popular/year/%d/?ajax=1" to "Most Viewed Jav Subbed",
-            "$mainUrl/uncensored-jav/recent/%d/?ajax=1" to "Rencent Uncensored",
-            "$mainUrl/reducing-mosaic/recent/%d/?ajax=1" to "Recent Reduced Mosaic",
-        )
+        "/releaseday/" to "Release Day",
+        "/recent/" to "Latest Updates",
+        "/popular/today/" to "Most Viewed Today",
+        "/popular/week/" to "Most Viewed Week",
+        "/jav-sub/" to "Jav Subbed",
+        "/jav-sub/popular/year/" to "Most Viewed Jav Subbed",
+        "/uncensored-jav/" to "Uncensored",
+        "/reducing-mosaic/" to "Reduced Mosaic",
+        "/amateur/" to "Amateur"
+    )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-            val document = if(request.data.contains("?ajax=1")) {
-                val json = app.get(request.data.format(page+1)).text
-                val html = JSONObject(json).optString("html", "")
-                Jsoup.parse(html)
-            } else if(page == 1) {
-                app.get("$mainUrl${request.data}").document
+        val document = if (page == 1) {
+            app.get("$mainUrl${request.data}").document
+        } else {
+            if (request.name == "Jav Subbed" || request.name == "Uncensored" || request.name == "Reduced Mosaic" || request.name == "Amateur") {
+                app.get("$mainUrl${request.data}recent/$page").document
+            } else {
+                app.get("$mainUrl${request.data}$page").document
             }
-            else {
-                if(request.name == "Jav Subbed" || request.name == "Uncensored" || request.name == "Reduced Mosaic" || request.name == "Amateur")
-                {
-                    app.get("$mainUrl${request.data}recent/$page").document
-                }
-                else
-                {
-                    app.get("$mainUrl${request.data}$page").document
-                }
-            }
-
-            val responseList  = document.select("div.video").mapNotNull { it.toSearchResult() }
-            return newHomePageResponse(HomePageList(request.name, responseList, isHorizontalImages = false),hasNext = true)
-
+        }
+        val responseList = document.select("div.video").mapNotNull { it.toSearchResult() }
+        return newHomePageResponse(
+            HomePageList(request.name, responseList.distinctBy { it.url }, isHorizontalImages = false),
+            hasNext = responseList.isNotEmpty()
+        )
     }
 
-    private fun Element.toSearchResult(): SearchResponse {
-        val title = this.select(".video-title").text()
-        val href = mainUrl + this.select(".thumbnail").attr("href")
-        val posterUrl = this.selectFirst(".video-thumb img")?.attr("src")
+    private fun Element.toSearchResult(): SearchResponse? {
+        val linkElem = this.selectFirst(".thumbnail, a[href*='/video/'], a") ?: return null
+        val href = fixUrlNull(linkElem.attr("href")) ?: return null
+        val title = this.selectFirst(".video-title, h3, h2")?.text()?.takeIf { it.isNotBlank() }
+            ?: linkElem.attr("title").takeIf { it.isNotBlank() }
+            ?: return null
+
+        val img = this.selectFirst(".video-thumb img, img")
+        val posterUrl = fixUrlNull(
+            img?.attr("data-src")?.takeIf { it.isNotBlank() }
+                ?: img?.attr("src")?.takeIf { it.isNotBlank() }
+        )
+
         return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }
 
+    override suspend fun search(query: String): List<SearchResponse> {
+        val searchResponse = mutableListOf<SearchResponse>()
+        val encodedQuery = query.trim().replace(" ", "+")
+        for (page in 1..3) {
+            val document = app.get("$mainUrl/search/video/?s=$encodedQuery&page=$page").document
+            val results = document.select("div.video").mapNotNull { it.toSearchResult() }
+            val unique = results.filterNot { item -> searchResponse.any { it.url == item.url } }
+            if (unique.isEmpty()) break
+            searchResponse.addAll(unique)
+        }
+        return searchResponse
+    }
+
     override suspend fun search(query: String, page: Int): SearchResponseList {
-        val json = app.get("$mainUrl/search/video/?s=$query&page=$page&ajax=1").text
-        val html = JSONObject(json).getString("html")
-        val document = Jsoup.parse(html)
-        val results = document.select("div.video").mapNotNull { it.toSearchResult() }
-        val hasNext = if (results.isEmpty()) false else true
-        return newSearchResponseList(results, hasNext)
+        val encodedQuery = query.trim().replace(" ", "+")
+        val document = app.get("$mainUrl/search/video/?s=$encodedQuery&page=$page").document
+        val results = document.select("div.video").mapNotNull { it.toSearchResult() }.distinctBy { it.url }
+        return newSearchResponseList(results, results.isNotEmpty())
     }
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
-        val title = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString()
+        val title = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim()
+            ?: document.title().substringBefore(" - JAV").trim()
         val poster = fixUrlNull(document.selectFirst("[property='og:image']")?.attr("content"))
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
-    
+
+        val tags = document.select(".video-tags a, a[href*='/tag/'], a[href*='/category/']")
+            .map { it.text().trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+
+        val actors = document.select(".video-actors a, a[href*='/actress/'], a[href*='/star/']")
+            .map { it.text().trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+
+        val recommendations = document.select("div.video")
+            .mapNotNull { it.toSearchResult() }
+            .distinctBy { it.url }
+            .filter { it.url != url }
 
         return newMovieLoadResponse(title, url, TvType.NSFW, url) {
             this.posterUrl = poster
             this.plot = description
+            this.tags = tags
+            this.recommendations = recommendations
+            addActors(actors)
         }
     }
 
-    override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+    override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
         val doc = app.get(data).document
         runAllAsync(
             {
                 val episodeList = doc.select(".button_style .button_choice_server")
-                    episodeList.amap { item ->
+                episodeList.forEach { item ->
                     val link = item.attr("data-embed")
-                    loadExtractor(base64Decode(link),subtitleCallback,callback)
+                    if (link.isNotBlank()) {
+                        runCatching {
+                            val decoded = if (link.startsWith("http")) link else base64Decode(link)
+                            loadExtractor(decoded, "$mainUrl/", subtitleCallback, callback)
+                        }
+                    }
+                }
+
+                // Fallback to iframes if no button server found
+                doc.select("iframe[src]").forEach { iframe ->
+                    val src = fixUrlNull(iframe.attr("src")) ?: return@forEach
+                    if (!src.contains("google") && !src.contains("facebook")) {
+                        runCatching {
+                            loadExtractor(src, "$mainUrl/", subtitleCallback, callback)
+                        }
+                    }
                 }
             },
             {
@@ -124,43 +174,36 @@ class JAVHDProvider : MainAPI() {
         return true
     }
 
-    suspend fun getExternalSubtitile(doc: Document, subtitleCallback: (SubtitleFile) -> Unit) {
+    private suspend fun getExternalSubtitile(doc: Document, subtitleCallback: (SubtitleFile) -> Unit) {
         try {
-            val title = doc.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString()
+            val title = doc.selectFirst("meta[property=og:title]")?.attr("content")?.trim() ?: doc.title()
             val javCode = "([a-zA-Z]+-\\d+)".toRegex().find(title)?.groups?.get(1)?.value
-            if(!javCode.isNullOrEmpty())
-            {
+            if (!javCode.isNullOrEmpty()) {
                 val query = "$subtitleCatUrl/index.php?search=$javCode"
                 val subDoc = app.get(query, timeout = 15).document
                 val subList = subDoc.select("td a")
-                for(item in subList)
-                {
-                    if(item.text().contains(javCode))
-                    {
+                for (item in subList) {
+                    if (item.text().contains(javCode, ignoreCase = true)) {
                         val fullUrl = "$subtitleCatUrl/${item.attr("href")}"
                         val pDoc = app.get(fullUrl, timeout = 10).document
                         val sList = pDoc.select(".col-md-6.col-lg-4")
-                        for(item in sList)
-                        {
+                        for (subItem in sList) {
                             try {
-                                val language = item.select(".sub-single span:nth-child(2)").text()
-                                val text = item.select(".sub-single span:nth-child(3) a")
-                                if(text.isNotEmpty() && text[0].text() == "Download")
-                                {
+                                val language = subItem.select(".sub-single span:nth-child(2)").text()
+                                val text = subItem.select(".sub-single span:nth-child(3) a")
+                                if (text.isNotEmpty() && text[0].text() == "Download") {
                                     val url = "$subtitleCatUrl${text[0].attr("href")}"
                                     subtitleCallback.invoke(
                                         newSubtitleFile(
-                                            language.replace("\uD83D\uDC4D \uD83D\uDC4E",""),  // Use label for the name
-                                            url     // Use extracted URL
+                                            language.replace("\uD83D\uDC4D \uD83D\uDC4E", "").trim(),
+                                            url
                                         )
                                     )
                                 }
                             } catch (_: Exception) { }
                         }
-
                     }
                 }
-
             }
         } catch (_: Exception) { }
     }

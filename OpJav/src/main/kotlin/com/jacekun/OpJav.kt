@@ -1,6 +1,5 @@
 package com.jacekun
 
-import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
@@ -8,7 +7,6 @@ import com.lagradost.cloudstream3.extractors.XStreamCdn
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.extractorApis
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
 
@@ -17,9 +15,10 @@ class OpJav : MainAPI() {
     override var name = "OpJAV"
     override var mainUrl = "https://opjav.com"
     override val supportedTypes = setOf(TvType.NSFW)
-    override val hasDownloadSupport = false
+    override val hasDownloadSupport = true
     override val hasMainPage = true
     override val hasQuickSearch = false
+    override val vpnStatus = VPNStatus.MightBeNeeded
 
     private val prefix = "Watch JAV"
 
@@ -36,7 +35,7 @@ class OpJav : MainAPI() {
 
         body.select("div.content").forEach {
             if (it != null) {
-                if (it.select(selectorRows).isNullOrEmpty()) {
+                if (it.select(selectorRows).isEmpty()) {
                     rows.add(Pair(selectorSimple, it))
                 } else {
                     rows.add(Pair(selectorRows, it))
@@ -51,37 +50,36 @@ class OpJav : MainAPI() {
             val isSimple = row.first == selectorSimple
             val entries = row.second.select(row.first)
             val elements = entries.mapNotNull {
-                if (it == null) { return@mapNotNull null }
+                if (it == null) return@mapNotNull null
                 val link: String
                 val name: String
-                val image : String?
-                var year : Int? = null
+                val image: String?
+                var year: Int? = null
 
                 if (isSimple) {
-                    //Simple load
-                    val inner = it.select("div.info") ?: return@mapNotNull null
-                    link = fixUrlNull(inner.select("a").get(0)?.attr("href")) ?: return@mapNotNull null
+                    val inner = it.select("div.info")
+                    link = fixUrlNull(inner.select("a").firstOrNull()?.attr("href")) ?: return@mapNotNull null
                     name = inner.text().trim()
                     val imgsrc = it.select("img")
-                    image = imgsrc.attr("src") ?: imgsrc.attr("data-src")
+                    image = fixUrlNull(imgsrc.attr("src").takeIf { s -> s.isNotBlank() } ?: imgsrc.attr("data-src"))
                 } else {
-                    val inner = it.select("div.inner") ?: return@mapNotNull null
-                    val poster = inner.select("a.poster") ?: return@mapNotNull null
+                    val inner = it.select("div.inner")
+                    val poster = inner.select("a.poster")
                     link = fixUrlNull(poster.attr("href")) ?: return@mapNotNull null
-                    name = it.text().trim().removePrefix("HD")
-                    image = poster.select("img").attr("src")
-                    year = inner.select("dfn").get(1)?.text()?.toIntOrNull()
+                    name = it.text().trim().removePrefix("HD").trim()
+                    image = fixUrlNull(poster.select("img").attr("src"))
+                    year = inner.select("dfn").getOrNull(1)?.text()?.toIntOrNull()
                 }
                 newMovieSearchResponse(
                     name = name,
                     url = link,
                     type = globalTvType,
                 ).apply {
-                    //this.apiName = this@OpJav.name
                     this.posterUrl = image
                     this.year = year
                 }
             }.distinctBy { a -> a.url }
+
             if (elements.isNotEmpty()) {
                 all.add(
                     HomePageList(
@@ -95,104 +93,97 @@ class OpJav : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val url = "$mainUrl/search/${query}/"
-        val document = app.get(url).document
-            .select("div.block-body > div.list-film.row > div")
-        //.select("div.item.col-lg-3.col-md-3.col-sm-6.col-xs-6")
-        //Log.i(this.name, "Result => (document) ${document}")
-        return document.mapNotNull {
-            val inner = it.select("div.inner") ?: return@mapNotNull null
-            val innerPost = inner.select("a.poster") ?: return@mapNotNull null
+        val searchResponse = mutableListOf<SearchResponse>()
+        val encoded = query.trim().replace(" ", "+")
 
-            val link = fixUrlNull(innerPost.attr("href")) ?: return@mapNotNull null
-            val title = innerPost.attr("title").trim().removePrefix(prefix).trim()
-            val imgsrc = innerPost.select("img")
-            val image = fixUrlNull(imgsrc.attr("src") ?: imgsrc.attr("data-src"))
-            val year = inner.select("dfn").last()?.text()?.trim()?.toIntOrNull()
+        for (page in 1..3) {
+            val url = if (page == 1) "$mainUrl/search/$encoded/" else "$mainUrl/search/$encoded/page/$page/"
+            val document = app.get(url).document
+                .select("div.block-body > div.list-film.row > div, div.list-film-simple > div.item")
 
-            //Log.i(this.name, "Result => $")
-            newMovieSearchResponse(
-                name = title,
-                url = link,
-                type = globalTvType,
-            ).apply {
-                //this.apiName = this@OpJav.name
-                this.posterUrl = image
-                this.year = year
+            val results = document.mapNotNull {
+                val inner = it.select("div.inner, div.info")
+                val innerPost = inner.select("a.poster, a").firstOrNull() ?: return@mapNotNull null
+
+                val link = fixUrlNull(innerPost.attr("href")) ?: return@mapNotNull null
+                val title = innerPost.attr("title").trim().removePrefix(prefix).trim().takeIf { t -> t.isNotBlank() }
+                    ?: inner.text().trim()
+                val imgsrc = innerPost.select("img")
+                val image = fixUrlNull(imgsrc.attr("src").takeIf { s -> s.isNotBlank() } ?: imgsrc.attr("data-src"))
+                val year = inner.select("dfn").lastOrNull()?.text()?.trim()?.toIntOrNull()
+
+                newMovieSearchResponse(
+                    name = title,
+                    url = link,
+                    type = globalTvType,
+                ).apply {
+                    this.posterUrl = image
+                    this.year = year
+                }
             }
-        }.distinctBy { it.url }
+            val unique = results.filterNot { item -> searchResponse.any { it.url == item.url } }
+            if (unique.isEmpty()) break
+            searchResponse.addAll(unique)
+        }
+
+        return searchResponse
     }
 
     override suspend fun load(url: String): LoadResponse {
         val doc = app.get(url).document
-        //Log.i(this.name, "Result => (url) ${url}")
-        val poster = fixUrlNull(doc.select("meta[itemprop=image]").get(1)?.attr("content")?.trim())
-        val title = doc.selectFirst("meta[property=og:title]")?.attr("content").toString().removePrefix(prefix).trim()
-        val descript = "Title: $title ${System.lineSeparator()}" + doc.selectFirst("meta[name=keywords]")?.attr("content")?.trim()
+        val poster = fixUrlNull(
+            doc.select("meta[itemprop=image]").getOrNull(1)?.attr("content")?.trim()
+                ?: doc.selectFirst("meta[property='og:image']")?.attr("content")
+        )
+        val title = doc.selectFirst("meta[property=og:title]")?.attr("content")?.removePrefix(prefix)?.trim()
+            ?: doc.title().removePrefix(prefix).trim()
+        val descript = doc.selectFirst("meta[name=keywords]")?.attr("content")?.trim()
         val year = doc.selectFirst("meta[itemprop=dateCreated]")?.attr("content")?.toIntOrNull()
 
-        val tags = doc.select("dl > dd").get(1)?.select("a")?.mapNotNull {
-            //Log.i(this.name, "Result => (tag) $it")
-            it?.text()?.trim() ?: return@mapNotNull null
+        val tags = doc.select("dl > dd").getOrNull(1)?.select("a")?.mapNotNull {
+            it?.text()?.trim()?.takeIf { t -> t.isNotBlank() }
         }
 
-        //Fetch server links
+        // Fetch server links
         val watchlink = ArrayList<String>()
-        val mainLink = doc.select("div.buttons.row a").attr("href")
-        //Log.i(this.name, "Result => (mainLink) $mainLink")
+        val mainLink = doc.selectFirst("div.buttons.row a, a.btn-watch")?.attr("href").orEmpty()
 
-        //Fetch episode links from mainlink
         if (mainLink.isNotBlank()) {
-            app.get(url = mainLink, referer = mainUrl).document.let { epsDoc ->
-                //Fetch filmId
-                /*var filmId = ""
-        val epLinkDoc = epsDoc.getElementsByTag("head").select("script").toString()
-        //Log.i(this.name, "Result => (epLinkDoc) $epLinkDoc")
-        try {
-            val epTextTemp = epLinkDoc.substring(epLinkDoc.indexOf("filmID = parseInt"))
-            val epText = epTextTemp.substring(1, epTextTemp.indexOf("</script>")).trim()
-                .filterNot { a -> a.isWhitespace() }
-            if (epText.isNotEmpty()) {
-                filmId = try {
-                    "(?<=filmID=parseInt\\(')(.*)(?='\\);)".toRegex().find(epText)?.groupValues?.get(0) ?: ""
-                } catch (e: Exception) { "" }
-                Log.i(this.name, "Result => (filmId) $filmId")
-            }
-        } catch (e: Exception) { }*/
-                //Fetch server links
+            runCatching {
+                val epsDoc = app.get(url = fixUrl(mainLink), referer = mainUrl).document
                 epsDoc.select("div.block.servers li").mapNotNull {
-                                val inner = it?.selectFirst("a") ?: return@mapNotNull null
-                                val linkUrl = inner.attr("href")
-                                val linkId = inner.attr("id")
-                                Pair(linkUrl, linkId)
-                            }.amap {
-                    //First = Url, Second = EpisodeID
-                    //Log.i(this.name, "Result => (eplink-Id) $it")
+                    val inner = it?.selectFirst("a") ?: return@mapNotNull null
+                    val linkUrl = inner.attr("href")
+                    val linkId = inner.attr("id")
+                    Pair(linkUrl, linkId)
+                }.amap {
                     val ajaxHead = mapOf(
                         Pair("Origin", mainUrl),
                         Pair("Referer", it.first)
                     )
-                    //https://opjav.com/movie/War%20of%20the%20Roses-64395/watch-movie.html
-                    //EpisodeID, 442671
-                    //filmID, 64395
                     val ajaxData = mapOf(
                         Pair("NextEpisode", "1"),
                         Pair("EpisodeID", it.second)
-                        //Pair("filmID", filmId)
                     )
                     app.post("$mainUrl/ajax", headers = ajaxHead, data = ajaxData)
                         .document.select("iframe").forEach { iframe ->
                             val serverLink = iframe?.attr("src")?.trim().orEmpty()
                             if (serverLink.isNotBlank()) {
                                 watchlink.add(serverLink)
-                                Log.i(name, "Result => (serverLink) $serverLink")
                             }
                         }
                 }
             }
         }
+
+        doc.select("iframe[src]").forEach { iframe ->
+            val src = fixUrlNull(iframe.attr("src")) ?: return@forEach
+            if (!src.contains("google") && !src.contains("facebook")) {
+                watchlink.add(src)
+            }
+        }
+
         val streamUrl = watchlink.distinct().toJson()
-        Log.i(this.name, "Result => (streamUrl) $streamUrl")
         return newMovieLoadResponse(
             name = title,
             url = url,
@@ -213,37 +204,37 @@ class OpJav : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        val urls = tryParseJson<List<String>>(data)
+            ?: if (data.startsWith("http")) listOf(data) else emptyList()
 
-        var count = 0
-        tryParseJson<List<String>>(data)?.forEach { link ->
+        urls.forEach { link ->
             val url = fixUrl(link.trim())
-            Log.i(this.name, "Result => (url) $url")
             when {
                 url.contains("opmovie.xyz") -> {
-                    XStreamCdn().let {
-                        it.domainUrl = "opmovie.xyz"
-                        it.getSafeUrl(
+                    runCatching {
+                        XStreamCdn().let {
+                            it.domainUrl = "opmovie.xyz"
+                            it.getSafeUrl(
+                                url = url,
+                                referer = url,
+                                subtitleCallback = subtitleCallback,
+                                callback = callback
+                            )
+                        }
+                    }
+                }
+                else -> {
+                    runCatching {
+                        loadExtractor(
                             url = url,
-                            referer = url,
+                            referer = "$mainUrl/",
                             subtitleCallback = subtitleCallback,
                             callback = callback
                         )
                     }
-                    count++
-                }
-                else -> {
-                    val success = loadExtractor(
-                        url = url,
-                        referer = mainUrl,
-                        subtitleCallback = subtitleCallback,
-                        callback = callback
-                    )
-                    if (success) {
-                        count++
-                    }
                 }
             }
         }
-        return count > 0
+        return true
     }
 }

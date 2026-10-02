@@ -53,11 +53,10 @@ class SxyPrn : MainAPI() {
 
     private fun Element.toSearchResult(): SearchResponse? {
         val title = this.selectFirst("div.post_text")?.text() ?: return null
-        val href = fixUrl(this.selectFirst("a.js-pop")!!.attr("href"))
-        var posterUrl = fixUrl(this.select("div.vid_container div.post_vid_thumb img").attr("src"))
-        if (posterUrl == "") {
-            posterUrl =
-                fixUrl(this.select("div.vid_container div.post_vid_thumb img").attr("data-src"))
+        val href = fixUrlNull(this.selectFirst("a.js-pop")?.attr("href")) ?: return null
+        var posterUrl = fixUrlNull(this.select("div.vid_container div.post_vid_thumb img").attr("src"))
+        if (posterUrl.isNullOrEmpty()) {
+            posterUrl = fixUrlNull(this.select("div.vid_container div.post_vid_thumb img").attr("data-src"))
         }
         return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
@@ -66,27 +65,25 @@ class SxyPrn : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
-        for (i in 0 until 15) {
+        val encoded = query.trim().replace(" ", "+")
+        for (i in 0 until 10) {
             val document = app.get(
-                "$mainUrl/${query.replace(" ", "-")}.html?page=${i * 30}"
+                "$mainUrl/search/$encoded.html?page=${i * 30}"
             ).document
             val results = document.select("div.main_content div.post_el_small").mapNotNull {
                     it.toSearchResult()
                 }
-            if (!searchResponse.containsAll(results)) {
-                searchResponse.addAll(results)
-            } else {
-                break
-            }
             if (results.isEmpty()) break
+            searchResponse.addAll(results)
         }
         return searchResponse
     }
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
-        val title = document.selectFirst("div.post_text")?.text()?.trim().toString()
-        val poster = httpsify(document.select("meta[property=og:image]").attr("content"))
+        val title = document.selectFirst("div.post_text")?.text()?.trim()
+            ?: document.selectFirst("meta[property=og:title]")?.attr("content") ?: ""
+        val poster = httpsify(document.selectFirst("meta[property=og:image]")?.attr("content") ?: "")
 
         val recommendations = document.select("div.main_content div div.post_el_small").mapNotNull {
             it.toSearchResult()
@@ -113,41 +110,62 @@ class SxyPrn : MainAPI() {
         return sut
     }
 
-   override suspend fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data).document
-        document.select("div.post_el_wrap a.extlink").amap {
-            loadExtractor(it.attr("href"), "", subtitleCallback, callback)
+
+        // 1) Try external links first (site sometimes has direct extlink buttons)
+        val extLinks = document.select("div.post_el_wrap a.extlink")
+        if (extLinks.isNotEmpty()) {
+            extLinks.amap {
+                runCatching { loadExtractor(it.attr("href"), data, subtitleCallback, callback) }
+            }
         }
 
-        // val parsed = AppUtils.parseJson<Map<String, String>>(
-        //     document.select("span.vidsnfo").attr("data-vnfo")
-        // )
-        // parsed[parsed.keys.toList()[0]]
-        // var url = parsed[parsed.keys.toList()[0]].toString()
+        // 2) Try data-vnfo JSON approach (original sxyprn stream method)
+        val vnfoAttr = document.select("span.vidsnfo").attr("data-vnfo")
+        if (vnfoAttr.isNotBlank()) {
+            runCatching {
+                val parsed = AppUtils.parseJson<Map<String, String>>(vnfoAttr)
+                var url = parsed[parsed.keys.first()].toString()
+                var tmp = url.split("/").toMutableList()
+                tmp[1] += "8"
+                tmp = updateUrl(tmp)
+                url = fixUrl(tmp.joinToString("/"))
+                callback.invoke(
+                    newExtractorLink(
+                        source = this.name,
+                        name   = this.name,
+                        url    = url
+                    ) {
+                        this.referer = mainUrl
+                        this.quality = Qualities.Unknown.value
+                    }
+                )
+            }
+        }
 
-        // var tmp = url.split("/").toMutableList()
-        // tmp[1] += "8"
-        // tmp = updateUrl(tmp)
+        // 3) Fallback: direct source or video tags
+        document.select("source[src], video[src]").forEach { el ->
+            val src = el.attr("src")
+            if (src.isNotBlank()) {
+                callback.invoke(
+                    newExtractorLink(
+                        source = this.name,
+                        name   = this.name,
+                        url    = httpsify(src)
+                    ) {
+                        this.referer = mainUrl
+                        this.quality = Qualities.Unknown.value
+                    }
+                )
+            }
+        }
 
-        // url = fixUrl(tmp.joinToString("/"))
-
-        // callback.invoke(
-        //     newExtractorLink(
-        //         source = this.name,
-        //         name = this.name,
-        //         url = url
-        //     ) {
-        //         this.referer = ""
-        //         this.quality = Qualities.Unknown.value
-        //     }
-        // )
         return true
     }
 }
-
-

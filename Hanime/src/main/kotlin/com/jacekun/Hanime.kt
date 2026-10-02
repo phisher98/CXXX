@@ -8,12 +8,11 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
-import com.fasterxml.jackson.module.kotlin.readValue
-import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.newExtractorLink
+
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
@@ -249,7 +248,8 @@ class Hanime : MainAPI() {
         val uri = "$mainUrl/api/v8/video?id=${id}&"
         val response = app.get(uri)
 
-        val data = mapper.readValue<HanimeEpisodeData>(response.text)
+        val data = tryParseJson<HanimeEpisodeData>(response.text)
+            ?: throw ErrorLoadingException("Failed to parse episode data")
 
         val tags = data.hentaiTags.map { it.text }
 
@@ -289,22 +289,21 @@ class Hanime : MainAPI() {
         val res = app.get(data).text
         val response = tryParseJson<HanimeEpisodeData>(res)
 
-        response?.videosManifest?.servers?.map { server ->
-            server.streams.forEach {
-                if (it.url.isNotEmpty()) {
+        response?.videosManifest?.servers?.forEach { server ->
+            server.streams.forEach { stream ->
+                if (stream.url.isNotEmpty()) {
                     try {
                         callback.invoke(
                             newExtractorLink(
                                 source = "Hanime",
-                                name = "Hanime - ${server.name} - ${it.filesizeMbs}mb",
-                                url = it.url,
+                                name = "Hanime - ${server.name} - ${stream.filesizeMbs}mb",
+                                url = stream.url,
                                 type = ExtractorLinkType.M3U8
-                            ).apply {
-                                this.quality = getQualityFromName(it.height)
+                            ) {
+                                this.quality = getQualityFromName(stream.height)
                             }
                         )
-                    }
-                    catch (e: Exception) {
+                    } catch (e: Exception) {
                         logError(e)
                     }
                 }

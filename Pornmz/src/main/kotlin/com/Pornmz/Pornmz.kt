@@ -1,4 +1,4 @@
-package com.megix
+package com.Pornmz
 
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
@@ -23,11 +23,16 @@ class Pornmz : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl${request.data}/page/$page/").document
-        val home     = document.select(".videos-list a").mapNotNull { it.toSearchResult() }
+        val url = if (request.data.isEmpty()) {
+            "$mainUrl/page/$page/"
+        } else {
+            "$mainUrl${request.data}/page/$page/"
+        }
+        val document = app.get(url).document
+        val home = document.select(".videos-list a").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
-                list    = HomePageList(
+            list = HomePageList(
                 name    = request.name,
                 list    = home,
                 isHorizontalImages = true
@@ -36,13 +41,12 @@ class Pornmz : MainAPI() {
         )
     }
 
-    private fun Element.toSearchResult(): SearchResponse {
-        val title     = this.attr("title")
-        val href      = this.attr("href")
-        var posterUrl = this.select("img").attr("src")
-        if(posterUrl.isEmpty()) {
-            posterUrl = this.select("video").attr("poster")
-        }
+    private fun Element.toSearchResult(): SearchResponse? {
+        val title = this.attr("title").takeIf { it.isNotBlank() } ?: return null
+        val href = fixUrlNull(this.attr("href")) ?: return null
+        var posterUrl = this.selectFirst("img")?.attr("src")?.takeIf { it.isNotBlank() }
+            ?: this.selectFirst("img")?.attr("data-src")
+            ?: this.selectFirst("video")?.attr("poster")
 
         return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
@@ -51,18 +55,14 @@ class Pornmz : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
+        val encoded = query.trim().replace(" ", "+")
 
         for (i in 1..5) {
-            val document = app.get("$mainUrl/page/$i/?s=$query").document
+            val document = app.get("$mainUrl/page/$i/?s=$encoded").document
             val results = document.select(".videos-list a").mapNotNull { it.toSearchResult() }
 
-            if (!searchResponse.containsAll(results)) {
-                searchResponse.addAll(results)
-            } else {
-                break
-            }
-
             if (results.isEmpty()) break
+            searchResponse.addAll(results)
         }
 
         return searchResponse
@@ -71,10 +71,9 @@ class Pornmz : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
-        val title       = document.select("meta[property=og:title]").attr("content")
-        val poster      = document.select("meta[property='og:image']").attr("content")
-        val description = document.select("meta[property=og:description]").attr("content")
-
+        val title       = document.selectFirst("meta[property=og:title]")?.attr("content") ?: ""
+        val poster      = document.selectFirst("meta[property='og:image']")?.attr("content") ?: ""
+        val description = document.selectFirst("meta[property=og:description]")?.attr("content")
 
         return newMovieLoadResponse(title, url, TvType.NSFW, url) {
             this.posterUrl = poster
@@ -82,21 +81,56 @@ class Pornmz : MainAPI() {
         }
     }
 
-    override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+    override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
         val document = app.get(data).document
-        val iframe = document.select(".responsive-player iframe").attr("src")
-        val source = app.get(iframe).document.select("video source").attr("src")
+        val docText  = document.toString()
 
-        callback.invoke(
-            newExtractorLink(
-                source = "Pornmz",
-                name = "Pornmz",
-                url = source
-            ) {
-                this.referer = mainUrl
-                this.quality = Qualities.Unknown.value
+        // 1) Direct JS variable extraction
+        val jsRegex = Regex("""(?:video_url|file|src)\s*[:=]\s*['"]?(https?://[^'",\s>]+\.mp4[^'",\s>]*)['"]?""")
+        val jsLinks = jsRegex.findAll(docText).map { it.groupValues[1] }.distinct().toList()
+        for (link in jsLinks) {
+            callback.invoke(
+                newExtractorLink(
+                    source = this.name,
+                    name   = this.name,
+                    url    = link
+                ) {
+                    this.referer = mainUrl
+                    this.quality = Qualities.Unknown.value
+                }
+            )
+        }
+
+        // 2) Try iframes
+        document.select("iframe[src], iframe[data-src]").forEach { iframe ->
+            val iframeSrc = iframe.attr("src").ifBlank { iframe.attr("data-src") }
+            if (iframeSrc.isNotBlank()) {
+                runCatching { loadExtractor(iframeSrc, data, subtitleCallback, callback) }
             }
-        )
+        }
+
+        // 3) Direct source tags
+        document.select("source[src]").forEach { source ->
+            val src = source.attr("src")
+            if (src.isNotBlank() && (src.contains(".mp4") || src.contains(".m3u8"))) {
+                callback.invoke(
+                    newExtractorLink(
+                        source = this.name,
+                        name   = this.name,
+                        url    = src
+                    ) {
+                        this.referer = mainUrl
+                        this.quality = Qualities.Unknown.value
+                    }
+                )
+            }
+        }
+
         return true
     }
 }

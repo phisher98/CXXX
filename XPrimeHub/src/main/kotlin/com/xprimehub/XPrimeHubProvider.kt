@@ -5,6 +5,10 @@ import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.extractors.PixelDrain
+import com.lagradost.cloudstream3.extractors.StreamTape
+import com.lagradost.cloudstream3.extractors.Voe
+import com.lagradost.cloudstream3.extractors.DoodstreamCom
+import com.lagradost.cloudstream3.extractors.Lulustream1
 import com.lagradost.cloudstream3.app
 
 @CloudstreamPlugin
@@ -13,7 +17,14 @@ class XPrimeHubProvider: Plugin() {
         registerMainAPI(XPrimeHub())
         registerExtractorAPI(PixelDrain())
         registerExtractorAPI(VCloud())
+        registerExtractorAPI(HubCloud())
+        registerExtractorAPI(HubCloudClub())
+        registerExtractorAPI(StreamTape())
+        registerExtractorAPI(Voe())
+        registerExtractorAPI(DoodstreamCom())
+        registerExtractorAPI(Lulustream1())
     }
+
     companion object {
         private const val DOMAINS_URL =
             "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json"
@@ -33,7 +44,7 @@ class XPrimeHubProvider: Plugin() {
 
         data class Domains(
             @JsonProperty("xprimehub")
-            val xprimehub: String,
+            val xprimehub: String?,
         )
     }
 }

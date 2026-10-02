@@ -69,9 +69,9 @@ class XvideosProvider : MainAPI() {
         val pageNumber = if (page > 1) "/new/${page - 1}" else ""
         val document = app.get("$mainUrl$pageNumber").document
 
-        val items = document.select("div.mozaique div.thumb-block")?.mapNotNull {
+        val items = document.select("div.mozaique div.thumb-block").mapNotNull {
             it.toSearchResponse()
-        } ?: emptyList()
+        }
 
         val hasNextPage = document.selectFirst("div.pagination a.next-page") != null
         
@@ -81,7 +81,7 @@ class XvideosProvider : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse>? {
         val document = app.get("$mainUrl/?k=$query").document
 
-        return document.select("div.mozaique div.thumb-block")?.mapNotNull {
+        return document.select("div.mozaique div.thumb-block").mapNotNull {
             it.toSearchResponse()
         }
     }
@@ -120,7 +120,7 @@ class XvideosProvider : MainAPI() {
             }
         }
         if (tags.isNullOrEmpty()) {
-            tags = document.select("div.video-tags-list li a.is-keyword")?.map { it.text() }?.filter { it.isNotBlank() }
+            tags = document.select("div.video-tags-list li a.is-keyword").map { it.text() }.filter { it.isNotBlank() }
         }
 
         val uploaderName = document.selectFirst("div.video-tags-list li.main-uploader a.uploader-tag span.name")?.text()

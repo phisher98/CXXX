@@ -20,9 +20,9 @@ class YMaal : MainAPI() {
     override val supportedTypes = setOf(TvType.NSFW)
 
     private fun toResult(post: Element): SearchResponse? {
-        val url = post?.attr("href") ?: return null
+        val url = post.attr("href").takeIf { it.isNotBlank() } ?: return null
         val title = post.selectFirst("h2.title")?.text() ?: ""
-        val imageUrl = post.selectFirst("div.thumbnail-container img")?.attr("src") ?: null
+        val imageUrl = post.selectFirst("div.thumbnail-container img")?.attr("src")
     
         return newMovieSearchResponse(title, url, TvType.Movie) {
             this.posterUrl = imageUrl

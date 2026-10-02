@@ -169,7 +169,7 @@ class XnxxProvider : MainAPI() {
                                             if (videos.isNotEmpty()) HomePageList(sectionTitle, videos) else null
                                         }
                                     }
-                                    deferredLists.forEach { it?.await()?.let { homePageListsResult.add(it) } }
+                                    deferredLists.forEach { it.await()?.let { homePageListsResult.add(it) } }
                                 }
                             }
                         } catch (e: Exception) { e.printStackTrace() }

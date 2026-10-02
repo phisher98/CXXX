@@ -45,7 +45,7 @@ class Hahomoe : MainAPI() {
                         val anime =
                             top.select("li > a").mapNotNull {
                                 val epTitle = it.selectFirst(".thumb-title")?.text() ?: ""
-                                val url = fixUrlNull(it?.attr("href")) ?: return@mapNotNull null
+                                val url = fixUrlNull(it.attr("href")) ?: return@mapNotNull null
                                 newAnimeSearchResponse(
                                     name = epTitle,
                                     url = url,
@@ -62,7 +62,7 @@ class Hahomoe : MainAPI() {
                     val anime =
                         section.select("li > a").mapNotNull {
                             val epTitle = it.selectFirst(".thumb-title")?.text() ?: ""
-                            val url = fixUrlNull(it?.attr("href")) ?: return@mapNotNull null
+                            val url = fixUrlNull(it.attr("href")) ?: return@mapNotNull null
                             newAnimeSearchResponse(
                                 name = epTitle,
                                 url = url,
@@ -188,7 +188,7 @@ class Hahomoe : MainAPI() {
         val episodeNodes = document.select("li[class*=\"episode\"] > a")
 
         val episodes = episodeNodes.mapNotNull {
-            val dataUrl = it?.attr("href") ?: return@mapNotNull null
+            val dataUrl = it.attr("href").takeIf { u -> u.isNotBlank() } ?: return@mapNotNull null
             val title = it.selectFirst(".episode-title")?.text()?.trim()
             val epno = it.select("div.episode-slug").text()
             newEpisode(dataUrl) {
@@ -207,16 +207,17 @@ class Hahomoe : MainAPI() {
         }
         val yearText = document.selectFirst("li.release-date .value")?.text() ?: ""
         val pattern = "(\\d{4})".toRegex()
-        val (year) = pattern.find(yearText)!!.destructured
+        val year = pattern.find(yearText)?.groupValues?.getOrNull(1)?.toIntOrNull()
         val poster = document.selectFirst("img.cover-image")?.attr("src")
         val type = document.selectFirst("a[href*=\"$mainUrl/type/\"]")?.text()?.trim()
         val synopsis = document.selectFirst(".entry-description > .card-body")?.text()?.trim()
-        val genre = document.select("li.genre.meta-data > span.value").map { it?.text()?.trim().toString() }
-        val synonyms = document.select("li.synonym.meta-data > div.info-box > span.value").map { it?.text()?.trim().toString() }
+        val genre = document.select("li.genre.meta-data > span.value").map { it.text().trim() }
+        val synonyms = document.select("li.synonym.meta-data > div.info-box > span.value").map { it.text().trim() }
 
         return newAnimeLoadResponse(canonicalTitle, url, getType(type ?: "")) {
             this.engName = englishTitle
             this.japName = japaneseTitle
+            this.year = year
             this.apiName = this@Hahomoe.name
             this.posterUrl = poster
             this.episodes = hashMapOf(DubStatus.Subbed to episodes)
@@ -224,7 +225,6 @@ class Hahomoe : MainAPI() {
             this.plot = synopsis
             this.tags = ArrayList(genre)
             this.synonyms = ArrayList(synonyms)
-            this.year = year.toIntOrNull()
         }
     }
 

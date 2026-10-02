@@ -64,7 +64,7 @@ class Perverzija : MainAPI() {
 
     private fun Element.toRecommendationResult(): SearchResponse? {
         val posterUrl = fixUrlNull(this.select("dt a img").attr("src"))
-        val title = this.select("dd a").text() ?: return null
+        val title = this.select("dd a").text().takeIf { it.isNotBlank() } ?: return null
         val href = fixUrlNull(this.select("dt a").attr("href")) ?: return null
 
         return newMovieSearchResponse(title, href, TvType.NSFW) {
@@ -75,7 +75,7 @@ class Perverzija : MainAPI() {
 
     private fun Element.toSearchResult(): SearchResponse? {
         val posterUrl = fixUrlNull(this.select("div.item-thumbnail img").attr("src"))
-        val title = this.select("div.item-head a").text() ?: return null
+        val title = this.select("div.item-head a").text().takeIf { it.isNotBlank() } ?: return null
         val href = fixUrlNull(this.select("div.item-head a").attr("href")) ?: return null
 
         return newMovieSearchResponse(title, href, TvType.NSFW) {

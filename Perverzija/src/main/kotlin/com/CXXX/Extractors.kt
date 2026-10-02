@@ -26,7 +26,7 @@ open class Xtremestream : ExtractorApi() {
             .build()
 
         val response = client.newCall(request).execute()
-        val html = response.body?.string() ?: return
+        val html = response.body.string()
 
         val playerScript =
             Jsoup.parse(html).selectXpath("//script[contains(text(),'var video_id')]")

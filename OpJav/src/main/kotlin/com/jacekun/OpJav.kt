@@ -34,12 +34,10 @@ class OpJav : MainAPI() {
         val selectorRows = "div.list-film.row > div"
 
         body.select("div.content").forEach {
-            if (it != null) {
-                if (it.select(selectorRows).isEmpty()) {
-                    rows.add(Pair(selectorSimple, it))
-                } else {
-                    rows.add(Pair(selectorRows, it))
-                }
+            if (it.select(selectorRows).isEmpty()) {
+                rows.add(Pair(selectorSimple, it))
+            } else {
+                rows.add(Pair(selectorRows, it))
             }
         }
 
@@ -50,7 +48,6 @@ class OpJav : MainAPI() {
             val isSimple = row.first == selectorSimple
             val entries = row.second.select(row.first)
             val elements = entries.mapNotNull {
-                if (it == null) return@mapNotNull null
                 val link: String
                 val name: String
                 val image: String?
@@ -141,7 +138,7 @@ class OpJav : MainAPI() {
         val year = doc.selectFirst("meta[itemprop=dateCreated]")?.attr("content")?.toIntOrNull()
 
         val tags = doc.select("dl > dd").getOrNull(1)?.select("a")?.mapNotNull {
-            it?.text()?.trim()?.takeIf { t -> t.isNotBlank() }
+            it.text().trim().takeIf { t -> t.isNotBlank() }
         }
 
         // Fetch server links
@@ -152,7 +149,7 @@ class OpJav : MainAPI() {
             runCatching {
                 val epsDoc = app.get(url = fixUrl(mainLink), referer = mainUrl).document
                 epsDoc.select("div.block.servers li").mapNotNull {
-                    val inner = it?.selectFirst("a") ?: return@mapNotNull null
+                    val inner = it.selectFirst("a") ?: return@mapNotNull null
                     val linkUrl = inner.attr("href")
                     val linkId = inner.attr("id")
                     Pair(linkUrl, linkId)
@@ -167,7 +164,7 @@ class OpJav : MainAPI() {
                     )
                     app.post("$mainUrl/ajax", headers = ajaxHead, data = ajaxData)
                         .document.select("iframe").forEach { iframe ->
-                            val serverLink = iframe?.attr("src")?.trim().orEmpty()
+                            val serverLink = iframe.attr("src").trim()
                             if (serverLink.isNotBlank()) {
                                 watchlink.add(serverLink)
                             }
@@ -212,15 +209,14 @@ class OpJav : MainAPI() {
             when {
                 url.contains("opmovie.xyz") -> {
                     runCatching {
-                        XStreamCdn().let {
-                            it.domainUrl = "opmovie.xyz"
-                            it.getSafeUrl(
-                                url = url,
-                                referer = url,
-                                subtitleCallback = subtitleCallback,
-                                callback = callback
-                            )
-                        }
+                        object : XStreamCdn() {
+                            override var domainUrl = "opmovie.xyz"
+                        }.getSafeUrl(
+                            url = url,
+                            referer = url,
+                            subtitleCallback = subtitleCallback,
+                            callback = callback
+                        )
                     }
                 }
                 else -> {

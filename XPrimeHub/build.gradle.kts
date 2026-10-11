@@ -1,4 +1,4 @@
-version = 5
+version = 6
 
 cloudstream {
     authors     = listOf("Phisher98")
@@ -14,5 +14,5 @@ cloudstream {
     **/
     status  = 1 // will be 3 if unspecified
     tvTypes = listOf("NSFW")
-    iconUrl = "https://xprimehub.vip/wp-content/uploads/2021/10/Logo.png"
+    iconUrl = "https://xprimehub.pics/wp-content/uploads/2026/04/cropped-icon-192x192.png"
 }

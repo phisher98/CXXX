@@ -16,6 +16,7 @@ class XPrimeHubProvider: Plugin() {
     override fun load(context: Context) {
         registerMainAPI(XPrimeHub())
         registerExtractorAPI(PixelDrain())
+        registerExtractorAPI(FastDL())
         registerExtractorAPI(VCloud())
         registerExtractorAPI(HubCloud())
         registerExtractorAPI(HubCloudClub())

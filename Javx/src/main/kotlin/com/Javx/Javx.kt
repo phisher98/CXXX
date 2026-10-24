@@ -112,20 +112,22 @@ class Javx : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val doc = app.get(data).document
+        val body = app.get(data).text
 
-        // Check tabs
-        doc.select("#sourcetabs a, a.btn-server").forEach {
-            val href = fixUrlNull(it.attr("href")) ?: return@forEach
+        val embeds = Regex(
+            """https?://[a-z0-9.\-]*(?:streamtape|voe|dood|mixdrop|netu|streamwish|filemoon)[a-z0-9.\-]*\.[a-z]{2,10}/e/[A-Za-z0-9]+"""
+        ).findAll(body).map { it.value }.distinct().toList()
+
+        embeds.forEach { href ->
             runCatching {
                 loadExtractor(href, "$mainUrl/", subtitleCallback, callback)
             }
         }
 
-        // Check embedded iframes
+        val doc = app.get(data).document
         doc.select("iframe[src]").forEach { iframe ->
             val src = fixUrlNull(iframe.attr("src")) ?: return@forEach
-            if (!src.contains("google") && !src.contains("facebook")) {
+            if (!src.contains("google") && !src.contains("facebook") && !src.endsWith(".mp4")) {
                 runCatching {
                     loadExtractor(src, "$mainUrl/", subtitleCallback, callback)
                 }

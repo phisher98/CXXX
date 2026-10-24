@@ -1,18 +1,12 @@
-version = 16
+version = 17
 
 cloudstream {
     authors     = listOf("Phisher98")
-    language    = "en"
+    language    = "hi"
     description = "IXI Porn"
+    requiresResources = false
 
-    /**
-     * Status int as the following:
-     * 0: Down
-     * 1: Ok
-     * 2: Slow
-     * 3: Beta only
-    **/
-    status  = 1 // will be 3 if unspecified
+    status  = 1
     tvTypes = listOf("NSFW")
-    iconUrl = "https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://ixiporn.org&size=16"
+    iconUrl = "https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://ixiporn.live&size=16"
 }

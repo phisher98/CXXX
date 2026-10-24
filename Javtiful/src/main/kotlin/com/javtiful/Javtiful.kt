@@ -7,7 +7,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
-import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 
 class Javtiful : MainAPI() {
@@ -26,17 +25,16 @@ class Javtiful : MainAPI() {
         "videos?sort=top_favorites" to "Top Favorites",
     )
 
+    private fun buildUrl(data: String, page: Int): String {
+        return if (data.contains("?")) "$mainUrl/$data&page=$page" else "$mainUrl/$data?page=$page"
+    }
+
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val url = if (request.data.contains("?")) {
-            "$mainUrl/${request.data}&page=$page"
-        } else {
-            "$mainUrl/${request.data}?page=$page"
-        }
-        val document = app.get(url).document
-        val home = document.select("article.front-video-card, div.front-video-card, div.card.border-0")
+        val document = app.get(buildUrl(request.data, page)).document
+        val home = document.select("article.video-card:not(.video-card--partner)")
             .mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -50,14 +48,14 @@ class Javtiful : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        val linkElem = this.selectFirst("a.front-video-thumb, a[href*='/video/'], a") ?: return null
+        val linkElem = this.selectFirst("a.video-card__thumbnail, a[href*='/video/']") ?: return null
         val href = fixUrlNull(linkElem.attr("href")) ?: return null
 
-        val img = this.selectFirst("img")
+        val img = linkElem.selectFirst("img") ?: this.selectFirst("img")
         val altTitle = img?.attr("alt")?.removePrefix("Thumbnail for ")?.trim()
         val title = altTitle?.takeIf { it.isNotBlank() }
-            ?: this.selectFirst("div.front-video-card__title, h2, h3, h4")?.text()?.trim()?.takeIf { it.isNotBlank() }
-            ?: linkElem.attr("title").takeIf { it.isNotBlank() }
+            ?: this.selectFirst("a.video-card__title")?.attr("title")?.trim()?.takeIf { it.isNotBlank() }
+            ?: this.selectFirst("a.video-card__title, h2, h3, h4")?.text()?.trim()?.takeIf { it.isNotBlank() }
             ?: return null
 
         val posterUrl = fixUrlNull(
@@ -76,9 +74,8 @@ class Javtiful : MainAPI() {
         val encoded = query.trim().replace(" ", "+")
 
         for (page in 1..3) {
-            val url = "$mainUrl/search?q=$encoded&page=$page"
-            val document = app.get(url).document
-            val results = document.select("article.front-video-card, div.front-video-card, div.card.border-0")
+            val document = app.get("$mainUrl/search?q=$encoded&page=$page").document
+            val results = document.select("article.video-card:not(.video-card--partner)")
                 .mapNotNull { it.toSearchResult() }
             val unique = results.filterNot { item -> searchResponse.any { it.url == item.url } }
             if (unique.isEmpty()) break
@@ -105,7 +102,7 @@ class Javtiful : MainAPI() {
             .filter { it.isNotBlank() }
             .distinct()
 
-        val recommendations = document.select("article.front-video-card, div.front-video-card, div.card.border-0")
+        val recommendations = document.select("article.video-card:not(.video-card--partner)")
             .mapNotNull { it.toSearchResult() }
             .distinctBy { it.url }
             .filter { it.url != url }
@@ -125,74 +122,52 @@ class Javtiful : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).document
+        val body = app.get(data).text
+        val endpoint = Regex(""""endpoint"\s*:\s*"(/video/\d+/playback)"""").find(body)?.groupValues?.get(1)
+        val ticket = Regex(""""ticket"\s*:\s*"([^"]+)"""").find(body)?.groupValues?.get(1)
+        if (endpoint == null || ticket == null) return false
 
-        // 1. Direct HTML5 source tags
-        val sources = document.select("video source[src], source[src]")
-        for (source in sources) {
-            val src = source.attr("src")
-            if (src.isNotBlank()) {
-                callback.invoke(
-                    newExtractorLink(
-                        source = name,
-                        name = name,
-                        url = src,
-                        type = INFER_TYPE
-                    ) {
-                        this.referer = "$mainUrl/"
-                        this.quality = Qualities.Unknown.value
-                    }
+        val response = runCatching {
+            app.post(
+                "$mainUrl$endpoint",
+                data = mapOf("ticket" to ticket),
+                headers = mapOf(
+                    "Referer" to data,
+                    "X-Requested-With" to "XMLHttpRequest"
                 )
-            }
-        }
+            ).parsedSafe<PlaybackResponse>()
+        }.getOrNull() ?: return false
 
-        // 2. Legacy AJAX CDN endpoint fallback
-        runCatching {
-            val token = document.selectFirst("#token_full")?.attr("data-csrf-token") ?: ""
-            val script = document.selectFirst("script:containsData(vcpov)")?.data()
-            val postid = script?.let { Regex("""vcpov\s*=\s*[`"'](.*?)['"`]""").find(it)?.groupValues?.get(1) } ?: ""
-            if (postid.isNotBlank()) {
-                val form = mapOf("video_id" to postid, "pid_c" to "", "token" to token)
-                val m3u8 = app.post(
-                    "$mainUrl/ajax/get_cdn",
-                    data = form,
-                    headers = mapOf("Referer" to data, "X-Requested-With" to "XMLHttpRequest")
-                ).parsedSafe<Response>()?.playlists
-
-                if (!m3u8.isNullOrBlank()) {
-                    callback.invoke(
-                        newExtractorLink(
-                            source = name,
-                            name = name,
-                            url = m3u8,
-                            type = INFER_TYPE
-                        ) {
-                            this.referer = "$mainUrl/"
-                            this.quality = Qualities.Unknown.value
-                        }
-                    )
+        var found = false
+        response.sources?.forEach { source ->
+            if (source.src.isNullOrBlank()) return@forEach
+            found = true
+            callback.invoke(
+                newExtractorLink(
+                    source = name,
+                    name = source.label?.takeIf { it.isNotBlank() } ?: name,
+                    url = source.src,
+                    type = INFER_TYPE
+                ) {
+                    this.referer = "$mainUrl/"
+                    this.quality = source.size ?: Qualities.Unknown.value
                 }
-            }
+            )
         }
-
-        // 3. Fallback to iframes
-        document.select("iframe[src]").forEach { iframe ->
-            val src = fixUrlNull(iframe.attr("src")) ?: return@forEach
-            if (!src.contains("google") && !src.contains("facebook")) {
-                runCatching {
-                    loadExtractor(src, "$mainUrl/", subtitleCallback, callback)
-                }
-            }
-        }
-
-        return true
+        return found
     }
 
-    data class Response(
-        @JsonProperty("playlists_active")
-        val playlistsActive: Long? = null,
-        val playlists: String? = null,
-        @JsonProperty("playlist_source")
-        val playlistSource: String? = null,
+    data class PlaybackSource(
+        val src: String? = null,
+        val type: String? = null,
+        val size: Int? = null,
+        val label: String? = null,
+    )
+
+    data class PlaybackResponse(
+        val success: Boolean? = null,
+        val sources: List<PlaybackSource>? = null,
+        @JsonProperty("defaultQuality")
+        val defaultQuality: Int? = null,
     )
 }

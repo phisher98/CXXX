@@ -116,12 +116,17 @@ class SuperJav : MainAPI() {
             val rawLink = it.attr("data-link")
             if (rawLink.isNotBlank()) {
                 runCatching {
-                    val id = rawLink.toCharArray().reversed().joinToString("")
-                    val fetchurl = "https://lk1.supremejav.com/supjav.php?c=$id"
-                    val sourcefetch = app.get(fetchurl, referer = fetchurl, allowRedirects = false).headers["location"].orEmpty()
-                    if (sourcefetch.isNotBlank()) {
-                        Log.d("Phisher", sourcefetch)
-                        loadExtractor(sourcefetch, referer = "$mainUrl/", subtitleCallback, callback)
+                    val gateway = "https://lk1.supremejav.com/supjav.php?l=$rawLink"
+                    val gateBody = app.get(gateway, referer = "$mainUrl/").text
+                    val olid = Regex("""var OLID = '([^']+)'""").find(gateBody)?.groupValues?.get(1)
+                    if (olid != null) {
+                        val fetchurl = "https://lk1.supremejav.com/supjav.php?c=${olid.reversed()}"
+                        val sourcefetch = app.get(fetchurl, referer = gateway, allowRedirects = false)
+                            .headers["location"].orEmpty()
+                        if (sourcefetch.isNotBlank()) {
+                            Log.d("Phisher", sourcefetch)
+                            loadExtractor(sourcefetch, referer = "$mainUrl/", subtitleCallback, callback)
+                        }
                     }
                 }
             }

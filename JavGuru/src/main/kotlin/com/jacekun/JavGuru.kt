@@ -2,7 +2,7 @@ package com.jacekun
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -113,25 +113,11 @@ class JavGuru : MainAPI() {
             .distinctBy { it.url }
             .filter { it.url != url }
 
-        // Extract embed iframe URLs
-        val html = doc.html()
-        val iframes = doc.select("div.posts iframe[src], div.wp-content iframe[src], iframe[src]")
-            .mapNotNull { fixUrlNull(it.attr("src")) }
-            .filter { !it.contains("google") && !it.contains("facebook") }
-
-        val scriptUrls = Regex("""(?:src|file|url)["']?\s*[:=]\s*["'](https?://[^"']+)["']""")
-            .findAll(html)
-            .map { it.groupValues[1] }
-            .filter { it.contains("embed") || it.contains("stream") || it.contains("player") }
-            .toList()
-
-        val allUrls = (iframes + scriptUrls).distinct()
-
         return newMovieLoadResponse(
             name = title,
             url = url,
             type = globaltvType,
-            dataUrl = allUrls.toJson(),
+            dataUrl = url,
         ).apply {
             this.apiName = this@JavGuru.name
             this.posterUrl = poster
@@ -143,21 +129,72 @@ class JavGuru : MainAPI() {
         }
     }
 
+    private fun resolveSearcho(page: String): String? {
+        val cid = Regex("""cid:\s*'([a-z0-9]+)'""").find(page)?.groupValues?.get(1) ?: return null
+        val rtype = Regex("""rtype:\s*'([a-z]+)'""").find(page)?.groupValues?.get(1) ?: return null
+        val keys = Regex("""'(data-[a-z0-9]+)'""").findAll(page).map { it.groupValues[1] }.take(3).toList()
+        if (keys.size < 3) return null
+        val el = Regex("""id="$cid"[^>]*""").find(page)?.groupValues?.get(0) ?: return null
+        val token = keys.mapNotNull { k ->
+            Regex("""$k="([^"]*)"""").find(el)?.groupValues?.get(1)
+        }.joinToString("")
+        if (token.length < 6) return null
+        return "$mainUrl/searcho/?${rtype}r=${token.reversed()}"
+    }
+
+    private fun extractPackedHls(body: String, embedUrl: String): String? {
+        val unpacker = JsUnpacker(body)
+        val unpacked = if (unpacker.detect()) unpacker.unpack() ?: body else body
+        val hls4 = Regex(""""hls4"\s*:\s*"([^"]+)"""").find(unpacked)?.groupValues?.get(1)
+        val hls2 = Regex(""""hls2"\s*:\s*"(https[^"]+)"""").find(unpacked)?.groupValues?.get(1)
+        return when {
+            hls4 != null -> if (hls4.startsWith("http")) hls4
+                else "https://" + embedUrl.substringAfter("//").substringBefore("/") + hls4
+            else -> hls2
+        }
+    }
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val urls = runCatching { data.fromJson<List<String>>() }.getOrNull()
-            ?: if (data.startsWith("http")) listOf(data) else emptyList()
+        val pageBody = app.get(data).text
+        val servers = Regex(""""iframe_url":"([A-Za-z0-9+/=]+)"""").findAll(pageBody)
+            .mapNotNull { runCatching { base64Decode(it.groupValues[1]) }.getOrNull() }
+            .distinct()
+            .toList()
 
-        for (link in urls) {
+        var found = false
+        servers.forEachIndexed { index, searcho ->
             runCatching {
-                loadExtractor(link, "$mainUrl/", subtitleCallback, callback)
+                val searchoPage = app.get(searcho, referer = "$mainUrl/").text
+                val realSrc = resolveSearcho(searchoPage) ?: return@runCatching
+                val resp = app.get(realSrc, referer = searcho)
+                val embedUrl = resp.url
+
+                if (embedUrl.contains("vide0.net")) {
+                    if (loadExtractor(embedUrl, "$mainUrl/", subtitleCallback, callback)) found = true
+                    return@runCatching
+                }
+
+                val link = extractPackedHls(resp.text, embedUrl) ?: return@runCatching
+                found = true
+                callback.invoke(
+                    newExtractorLink(
+                        source = name,
+                        name = "Server ${index + 1}",
+                        url = link
+                    ) {
+                        this.referer = embedUrl
+                        this.quality = Qualities.Unknown.value
+                        this.type = ExtractorLinkType.M3U8
+                    }
+                )
             }
         }
-        return true
+        return found
     }
 
     companion object {

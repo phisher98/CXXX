@@ -23,6 +23,8 @@ import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
+import com.google.gson.JsonParser
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
@@ -49,17 +51,25 @@ class JAVHDProvider : MainAPI() {
         "/amateur/" to "Amateur"
     )
 
+    private fun ajaxCards(raw: String): List<SearchResponse> {
+        return runCatching {
+            val html = JsonParser.parseString(raw).asJsonObject.get("html")?.asString ?: return emptyList()
+            Jsoup.parse(html).select("div.video").mapNotNull { it.toSearchResult() }
+        }.getOrNull() ?: emptyList()
+    }
+
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = if (page == 1) {
-            app.get("$mainUrl${request.data}").document
-        } else {
-            if (request.name == "Jav Subbed" || request.name == "Uncensored" || request.name == "Reduced Mosaic" || request.name == "Amateur") {
-                app.get("$mainUrl${request.data}recent/$page").document
-            } else {
-                app.get("$mainUrl${request.data}$page").document
-            }
+        val url = when (request.data) {
+            "/releaseday/", "/recent/" -> "$mainUrl${request.data}?ajax=browse_videos&page=$page"
+            "/jav-sub/", "/uncensored-jav/", "/reducing-mosaic/", "/amateur/" ->
+                if (page == 1) "$mainUrl${request.data}?ajax=1"
+                else "$mainUrl${request.data}recent/$page?ajax=1"
+            "/jav-sub/popular/year/" ->
+                if (page == 1) "$mainUrl${request.data}?ajax=1"
+                else "$mainUrl${request.data}$page?ajax=1"
+            else -> "$mainUrl${request.data}?ajax=browse_videos&page=$page"
         }
-        val responseList = document.select("div.video").mapNotNull { it.toSearchResult() }
+        val responseList = ajaxCards(app.get(url).text)
         return newHomePageResponse(
             HomePageList(request.name, responseList.distinctBy { it.url }, isHorizontalImages = false),
             hasNext = responseList.isNotEmpty()
@@ -88,8 +98,7 @@ class JAVHDProvider : MainAPI() {
         val searchResponse = mutableListOf<SearchResponse>()
         val encodedQuery = query.trim().replace(" ", "+")
         for (page in 1..3) {
-            val document = app.get("$mainUrl/search/video/?s=$encodedQuery&page=$page").document
-            val results = document.select("div.video").mapNotNull { it.toSearchResult() }
+            val results = ajaxCards(app.get("$mainUrl/search/video/?s=$encodedQuery&page=$page&ajax=1").text)
             val unique = results.filterNot { item -> searchResponse.any { it.url == item.url } }
             if (unique.isEmpty()) break
             searchResponse.addAll(unique)
@@ -99,8 +108,8 @@ class JAVHDProvider : MainAPI() {
 
     override suspend fun search(query: String, page: Int): SearchResponseList {
         val encodedQuery = query.trim().replace(" ", "+")
-        val document = app.get("$mainUrl/search/video/?s=$encodedQuery&page=$page").document
-        val results = document.select("div.video").mapNotNull { it.toSearchResult() }.distinctBy { it.url }
+        val results = ajaxCards(app.get("$mainUrl/search/video/?s=$encodedQuery&page=$page&ajax=1").text)
+            .distinctBy { it.url }
         return newSearchResponseList(results, results.isNotEmpty())
     }
 

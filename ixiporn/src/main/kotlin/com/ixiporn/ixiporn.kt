@@ -1,107 +1,119 @@
-package com.coxju
+package com.ixiporn
 
-import org.jsoup.nodes.Element
+import android.util.Base64
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
+import org.jsoup.nodes.Element
+import java.net.URLDecoder
 
 class ixiporn : MainAPI() {
-    override var mainUrl              = "https://ixiporn.org"
-    override var name                 = "ixiporn"
-    override val hasMainPage          = true
-    override var lang                 = "hi"
-    override val hasQuickSearch       = false
-    override val hasDownloadSupport   = true
+    override var mainUrl = "https://ixiporn.live"
+    override var name = "ixiporn"
+    override val hasMainPage = true
+    override var lang = "hi"
+    override val hasQuickSearch = false
+    override val hasDownloadSupport = true
     override val hasChromecastSupport = true
-    override val supportedTypes       = setOf(TvType.NSFW)
-    override val vpnStatus            = VPNStatus.MightBeNeeded
+    override val supportedTypes = setOf(TvType.NSFW)
+    override val vpnStatus = VPNStatus.MightBeNeeded
 
     override val mainPage = mainPageOf(
-            "${mainUrl}/?filter=latest/page/" to "Latest Release",
-            "${mainUrl}/tag/ullu-web-series/page/" to "Ullu Web Series",
-            "${mainUrl}/search/Hunters/page/" to "Hunter Web Series",
-            "${mainUrl}/search/fugi/page/" to "Fugi Web Series",
-            "${mainUrl}/search/besharams/page/" to "Besharams Web Series",
-            "${mainUrl}/search/primeplay/page/" to "Prime Play",
-            "${mainUrl}/search/neonx/page/" to "Neonx",
-            "${mainUrl}/search/Bang+Bros/page/" to "BangBros",
-            "${mainUrl}/search/brazzers/page/" to "Brazzers",
-            "${mainUrl}/search/voovi/page/" to "Voovi Web Series",
+        "filter=latest" to "Latest Release",
+        "filter=most" to "Most Viewed",
+        "filter=popular" to "Top Rated",
+        "filter=longest" to "Longest",
+        "s=ullu" to "Ullu Web Series",
+        "s=hunters" to "Hunter Web Series",
+        "s=primeplay" to "Prime Play",
+        "s=besharams" to "Besharams Web Series",
+        "s=neonx" to "Neonx",
+        "s=voovi" to "Voovi Web Series",
     )
 
+    private fun Element.toSearchResult(): SearchResponse? {
+        val anchor = this.selectFirst("a.infos") ?: return null
+        val href = anchor.attr("href").takeIf { it.isNotBlank() } ?: return null
+        val title = anchor.attr("title").takeIf { it.isNotBlank() } ?: anchor.selectFirst("span.title")?.text()
+        if (title.isNullOrBlank()) return null
+        val posterUrl = this.selectFirst("a.thumb img")?.let { img ->
+            img.attr("data-src").takeIf { it.isNotBlank() } ?: img.attr("src")
+        }
+
+        return newMovieSearchResponse(fixTitle(title), href, TvType.NSFW) {
+            this.posterUrl = fixUrlNull(posterUrl)
+        }
+    }
+
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get(request.data + page).document
-        val home     = document.select("div.col-12.col-md-4.col-lg-3.col-xl-3 > div.video-block").mapNotNull { it.toSearchResult() }
+        val url = if (page == 1) "$mainUrl/?${request.data}" else "$mainUrl/page/$page/?${request.data}"
+        val document = app.get(url).document
+        val home = document.select("div.video-block").mapNotNull { it.toSearchResult() }
+        val hasNext = document.select("link[rel=next]").isNotEmpty() && home.isNotEmpty()
 
         return newHomePageResponse(
-            list    = HomePageList(
-                name               = request.name,
-                list               = home,
+            list = HomePageList(
+                name = request.name,
+                list = home,
                 isHorizontalImages = true
             ),
-            hasNext = true
+            hasNext = hasNext
         )
     }
 
-    private fun Element.toSearchResult(): SearchResponse {
-        val title     = fixTitle(this.select("a.infos").attr("title")).trim().toString()
-        val href      = fixUrl(this.select("a.infos").attr("href"))
-        val posterUrl = fixUrlNull(this.select("a.thumb > img").attr("data-src"))
-
-        return newMovieSearchResponse(title, href, TvType.NSFW) {
-            this.posterUrl = posterUrl
-        }
-    }
-
-    override suspend fun search(query: String): List<SearchResponse> {
-        val searchResponse = mutableListOf<SearchResponse>()
-
-        for (i in 1..10) {
-            val document = app.get("${mainUrl}/page/$i?s=$query").document
-
-            val results = document.select("div.col-12.col-md-4.col-lg-3.col-xl-3 > div.video-block").mapNotNull { it.toSearchResult() }
-
-            if (!searchResponse.containsAll(results)) {
-                searchResponse.addAll(results)
-            } else {
-                break
-            }
-
-            if (results.isEmpty()) break
-        }
-
-        return searchResponse
+    override suspend fun search(query: String, page: Int): SearchResponseList? {
+        val url = if (page == 1) "$mainUrl/?s=$query" else "$mainUrl/page/$page/?s=$query"
+        val document = app.get(url).document
+        val results = document.select("div.video-block").mapNotNull { it.toSearchResult() }
+        return results.toNewSearchResponseList()
     }
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
-        val title       = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString()
-        val poster      = fixUrlNull(document.selectFirst("[property='og:image']")?.attr("content"))
+        val title = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString()
+        val poster = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
-    
 
         return newMovieLoadResponse(title, url, TvType.NSFW, url) {
             this.posterUrl = poster
-            this.plot      = description
+            this.plot = description
         }
     }
 
-    override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).document
+    private fun decodePlayerSources(pageBody: String): List<String> {
+        return Regex("""player-x\.php\?q=([A-Za-z0-9+/=]+)""").findAll(pageBody)
+            .mapNotNull { match ->
+                runCatching {
+                    val decoded = Base64.decode(match.groupValues[1], Base64.DEFAULT).decodeToString()
+                    val tag = URLDecoder.decode(decoded.substringAfter("tag=", ""), "UTF-8")
+                    Regex("""<source\s+src="([^"]+)"""").findAll(tag).map { it.groupValues[1] }.toList()
+                }.getOrNull()
+            }.flatten().toList()
+    }
 
-        document.select("div.video-player").map { res ->
+    override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        val response = app.get(data)
+        val sources = decodePlayerSources(response.text)
+
+        sources.forEach { src ->
             callback.invoke(
                 newExtractorLink(
                     source = this.name,
                     name = this.name,
-                    url = fixUrl(res.selectFirst("meta[itemprop=contentURL]")?.attr("content")?.trim().toString())
+                    url = src
                 ) {
                     this.referer = data
                     this.quality = Qualities.Unknown.value
+                    this.type = ExtractorLinkType.VIDEO
                 }
             )
         }
 
-        return true
+        return sources.isNotEmpty()
     }
 }

@@ -33,5 +33,7 @@ class JavpointProvider: Plugin() {
         registerExtractorAPI(Streamwish())
         registerExtractorAPI(Vidhidepro())
         registerExtractorAPI(Streamhihi())
+        registerExtractorAPI(Streamhgjav())
+        registerExtractorAPI(Earnvidjavgg())
     }
 }

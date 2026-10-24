@@ -40,44 +40,55 @@ open class DoodJav : ExtractorApi() {
     }
 }
 
-open class javclan : ExtractorApi() {
-    override var name = "Javclan"
-    override var mainUrl = "https://javclan.com"
-    override val requiresReferer = true
+open class XuploadHls : ExtractorApi() {
+    override var name = "Xupload"
+    override var mainUrl = "https://streamhgjav.xyz"
+    override val requiresReferer = false
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val responsecode=app.get(url,referer=referer)
-        if (responsecode.code==200) {
-            val serverRes = responsecode.document
-            val script = serverRes.selectFirst("script:containsData(sources)")?.data().toString()
-            val headers = mapOf(
-                "Accept" to "*/*",
-                "Connection" to "keep-alive",
-                "Sec-Fetch-Dest" to "empty",
-                "Sec-Fetch-Mode" to "cors",
-                "Sec-Fetch-Site" to "cross-site",
-                "Origin" to url,
-            )
-            Regex("file:\"(.*?)\"").find(script)?.groupValues?.get(1)?.let { link ->
-                return listOf(
-                    newExtractorLink(
-                        source = this.name,
-                        name = this.name,
-                        url = link,
-                        INFER_TYPE
-                    ) {
-                        this.referer = referer ?: ""
-                        this.quality = getQualityFromName("")
-                        this.headers = headers
-                    }
-                )
+        val body = app.get(url, referer = referer).text
+        val unpacker = JsUnpacker(body)
+        val unpacked = if (unpacker.detect()) unpacker.unpack() ?: body else body
+
+        val hls4 = Regex(""""hls4"\s*:\s*"([^"]+)"""").find(unpacked)?.groupValues?.get(1)
+        val hls2 = Regex(""""hls2"\s*:\s*"(https[^"]+)"""").find(unpacked)?.groupValues?.get(1)
+        val link = when {
+            hls4 != null -> if (hls4.startsWith("http")) hls4
+            else "https://" + url.substringAfter("//").substringBefore("/") + hls4
+            else -> hls2
+        } ?: return null
+
+        return listOf(
+            newExtractorLink(
+                source = name,
+                name = name,
+                url = link,
+                INFER_TYPE
+            ) {
+                this.referer = url
+                this.quality = Qualities.Unknown.value
             }
-        }
-        return null
+        )
     }
 }
 
-class Streamhihi : Streamwish() {
+class Streamhgjav : XuploadHls() {
+    override var name = "StreamHG"
+    override var mainUrl = "https://streamhgjav.xyz"
+}
+
+class Earnvidjavgg : XuploadHls() {
+    override var name = "EarnVids"
+    override var mainUrl = "https://earnvidjavgg.xyz"
+}
+
+open class javclan : XuploadHls() {
+    override var name = "Javclan"
+    override var mainUrl = "https://javclan.com"
+    override val requiresReferer = true
+}
+
+class Streamhihi : XuploadHls() {
     override var name = "Streamhihi"
     override var mainUrl = "https://streamhihi.com"
 }

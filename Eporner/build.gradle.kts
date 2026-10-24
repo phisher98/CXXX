@@ -1,8 +1,9 @@
-version = 13
+version = 14
 
 cloudstream {
     authors     = listOf("HindiProvider, megix")
     language    = "en"
+    requiresResources = false
     description = "Eporner"
 
     /**

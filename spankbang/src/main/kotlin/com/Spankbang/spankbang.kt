@@ -7,6 +7,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.network.CloudflareKiller
 
 class Spankbang : MainAPI() {
@@ -93,31 +94,32 @@ class Spankbang : MainAPI() {
     }
 
     override val mainPage = mainPageOf(
-        "trending_videos/"              to "Trending",
-        "new_videos/"                   to "New Videos",
-        "most_popular/"                 to "Most Popular",
-        "top_videos/"                   to "Top Rated",
-        "j2/channel/familyxxx/"         to "Family XXX",
-        "ce/channel/bratty+milf/"       to "Bratty MILF",
-        "cf/channel/bratty+sis/"        to "Bratty Sis",
-        "k5/channel/japan+hdv/"         to "Japan HDV",
-        "j3/channel/hot+wife+xxx/"      to "Hot Wife XXX",
-        "d6/channel/my+family+pies/"    to "My Family Pies",
-        "ho/channel/brazzers/"          to "Brazzers",
-        "6l/channel/mylf/"              to "MYLF",
-        "9n/channel/evil+angel/"        to "Evil Angel",
+        "trending_videos"               to "Trending",
+        "new_videos"                    to "New Videos",
+        "most_popular"                  to "Most Popular",
+        "top_videos"                    to "Top Rated",
+        "s/family+xxx"                  to "Family XXX",
+        "s/bratty+milf"                 to "Bratty MILF",
+        "s/bratty+sis"                  to "Bratty Sis",
+        "s/japan+hdv"                   to "Japan HDV",
+        "s/hot+wife+xxx"                to "Hot Wife XXX",
+        "s/brazzers"                    to "Brazzers",
+        "s/mylf"                        to "MYLF",
+        "s/evil+angel"                  to "Evil Angel",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val path = request.data.trim('/')
-        val url = if (path.isEmpty()) {
-            if (page <= 1) "$mainUrl/trending_videos/" else "$mainUrl/trending_videos/$page/"
+        val url = if (request.data.startsWith("s/")) {
+            "$mainUrl/${request.data}/$page/?o=all"
+        } else if (page <= 1) {
+            "$mainUrl/${request.data}/"
         } else {
-            if (page <= 1) "$mainUrl/$path/" else "$mainUrl/$path/$page/"
+            "$mainUrl/${request.data}/$page/"
         }
 
         val document = getDocument(url)
         val home = parseVideos(document)
+        val hasNext = document.select("div.pagination li.next a[href]").isNotEmpty()
 
         return newHomePageResponse(
             list = HomePageList(
@@ -125,19 +127,21 @@ class Spankbang : MainAPI() {
                 list = home,
                 isHorizontalImages = true
             ),
-            hasNext = home.isNotEmpty()
+            hasNext = hasNext
         )
     }
 
     private fun parseVideos(document: Document): List<SearchResponse> {
-        val containers = document.select(
-            "div.video-item, div.video_item, div[data-id], div.video-rotate, .video-list > div, .video-list-with-ads > div, article"
-        )
+        val containers = document.select("div[data-testid=video-item]")
         val containerResults = containers.mapNotNull { it.toSearchResult() }
         val results = if (containerResults.isNotEmpty()) {
             containerResults
         } else {
-            document.select("a.thumb, a[href*='/video/'], a[href*='/play/']").mapNotNull { it.toSearchResult() }
+            document.select(
+                "div.video-item, div.video_item, div[data-id], div.video-rotate, .video-list > div, .video-list-with-ads > div, article"
+            ).mapNotNull { it.toSearchResult() }.ifEmpty {
+                document.select("a.thumb, a[href*='/video/'], a[href*='/play/']").mapNotNull { it.toSearchResult() }
+            }
         }
         return results.distinctBy { it.url }
     }
@@ -196,9 +200,18 @@ class Spankbang : MainAPI() {
             val newItems = results.filterNot { item -> searchResponse.any { it.url == item.url } }
             if (newItems.isEmpty()) break
             searchResponse.addAll(newItems)
+            if (document.select("div.pagination li.next a[href]").isEmpty()) break
         }
 
         return searchResponse
+    }
+
+    override suspend fun search(query: String, page: Int): SearchResponseList {
+        val encodedQuery = query.trim().replace(" ", "+")
+        val document = getDocument("$mainUrl/s/$encodedQuery/$page/?o=all")
+        val results = parseVideos(document)
+        val hasNext = document.select("div.pagination li.next a[href]").isNotEmpty()
+        return newSearchResponseList(results, hasNext)
     }
 
     override suspend fun load(url: String): LoadResponse {
@@ -213,7 +226,6 @@ class Spankbang : MainAPI() {
             .removePrefix("Watch")
             .substringBefore(" - SpankBang")
             .substringBefore(" - Free Porn")
-            .substringBefore(" - ")
             .trim()
 
         val poster = fixUrlNull(
@@ -228,13 +240,21 @@ class Spankbang : MainAPI() {
             .filter { it.isNotBlank() }
             .distinct()
 
-        val recommendations = parseVideos(document).filter { it.url != url }
+        val actors = document.select("a[href*='/pornstar/'], a[href*='/creator/']")
+            .map { it.text().trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+
+        val recommendations = parseVideos(document)
+            .filter { it.url != url }
+            .distinctBy { it.url }
 
         return newMovieLoadResponse(if (title.isNotBlank()) title else "Video", url, TvType.NSFW, url) {
             this.posterUrl = poster
             this.plot = description
             this.tags = tags
             this.recommendations = recommendations
+            addActors(actors)
         }
     }
 

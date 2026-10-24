@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import org.json.JSONObject
 import java.math.BigInteger
+import java.net.URLEncoder
 
 class Eporner : MainAPI() {
     override var mainUrl              = "https://www.eporner.com"
@@ -23,19 +24,20 @@ class Eporner : MainAPI() {
         "most-viewed" to "Most Viewed",
         "cat/milf" to "Milf",
         "cat/japanese" to "Japanese",
+        "cat/desi" to "Desi",
         "cat/hd-1080p" to "1080 Porn",
         "cat/4k-porn" to "4K Porn",
-        "recommendations" to "Recommendation Videos",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val url = if (request.data.isBlank()) {
-            "$mainUrl/$page/"
-        } else {
-            "$mainUrl/${request.data}/$page/"
+        val url = when {
+            request.data.isBlank() && page <= 1 -> "$mainUrl/"
+            request.data.isBlank() -> "$mainUrl/$page/"
+            page <= 1 -> "$mainUrl/${request.data}/"
+            else -> "$mainUrl/${request.data}/$page/"
         }
         val document = app.get(url).document
-        val home = document.select("#div-search-results div.mb, div.mb").mapNotNull { it.toSearchResult() }
+        val home = document.select("div.mb").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(
             list = HomePageList(
                 name = request.name,
@@ -51,6 +53,7 @@ class Eporner : MainAPI() {
         val href = fixUrlNull(linkElem.attr("href")) ?: return null
         val titleText = this.selectFirst("div.mbunder p.mbtit a")?.text()
             ?: linkElem.attr("title")
+        if (titleText.isNullOrBlank()) return null
         val title = fixTitle(titleText).trim()
 
         val img = this.selectFirst("img")
@@ -65,18 +68,51 @@ class Eporner : MainAPI() {
         }
     }
 
-    override suspend fun search(query: String): List<SearchResponse> {
+    private suspend fun apiSearch(query: String, page: Int): List<SearchResponse> {
+        val encoded = URLEncoder.encode(query.trim(), "UTF-8")
+        val url = "$mainUrl/api/v2/video/search?query=$encoded&per_page=30&page=$page&thumbsize=big&gay=0&lq=1&format=json"
+        val body = app.get(url, referer = "$mainUrl/").text
+        val videos = JSONObject(body).optJSONArray("videos") ?: return emptyList()
+
+        val results = mutableListOf<SearchResponse>()
+        for (i in 0 until videos.length()) {
+            val video = videos.optJSONObject(i) ?: continue
+            val link = video.optString("url").takeIf { it.isNotBlank() } ?: continue
+            val title = video.optString("title").takeIf { it.isNotBlank() } ?: continue
+            val poster = video.optJSONObject("default_thumb")?.optString("src")?.takeIf { it.isNotBlank() }
+                ?: video.optJSONArray("thumbs")?.optJSONObject(0)?.optString("src")?.takeIf { it.isNotBlank() }
+
+            results.add(
+                newMovieSearchResponse(fixTitle(title), fixUrl(link), TvType.NSFW) {
+                    this.posterUrl = fixUrlNull(poster)
+                }
+            )
+        }
+        return results
+    }
+
+    private suspend fun htmlSearch(query: String, page: Int): List<SearchResponse> {
         val subquery = query.trim().replace(Regex("[^a-zA-Z0-9]+"), "-").trim('-')
-        val document = app.get("$mainUrl/search/$subquery/1/").document
-        return document.select("#div-search-results div.mb, div.mb")
-            .mapNotNull { it.toSearchResult() }
-            .distinctBy { it.url }
+        if (subquery.isBlank()) return emptyList()
+        val document = app.get("$mainUrl/search/$subquery/$page/").document
+        return document.select("div.mb").mapNotNull { it.toSearchResult() }
+    }
+
+    override suspend fun search(query: String): List<SearchResponse> {
+        val results = mutableListOf<SearchResponse>()
+        for (page in 1..2) {
+            val api = runCatching { apiSearch(query, page) }.getOrDefault(emptyList())
+            val pageResults = if (api.isNotEmpty()) api else htmlSearch(query, page)
+            val newItems = pageResults.filterNot { item -> results.any { it.url == item.url } }
+            if (newItems.isEmpty()) break
+            results.addAll(newItems)
+        }
+        return results.distinctBy { it.url }
     }
 
     override suspend fun search(query: String, page: Int): SearchResponseList {
-        val subquery = query.trim().replace(Regex("[^a-zA-Z0-9]+"), "-").trim('-')
-        val document = app.get("$mainUrl/search/$subquery/$page/").document
-        val results = document.select("#div-search-results div.mb, div.mb").mapNotNull { it.toSearchResult() }
+        val api = runCatching { apiSearch(query, page) }.getOrDefault(emptyList())
+        val results = if (api.isNotEmpty()) api else runCatching { htmlSearch(query, page) }.getOrDefault(emptyList())
         return newSearchResponseList(results.distinctBy { it.url }, results.isNotEmpty())
     }
 
@@ -93,7 +129,7 @@ class Eporner : MainAPI() {
             .filter { it.isNotBlank() }
             .distinct()
 
-        val recommendations = document.select("#div-search-results div.mb, div.mb")
+        val recommendations = document.select("div.mb")
             .mapNotNull { it.toSearchResult() }
             .distinctBy { it.url }
             .filter { it.url != url }
@@ -136,7 +172,7 @@ class Eporner : MainAPI() {
                 callback.invoke(
                     newExtractorLink(
                         source = name,
-                        name = name,
+                        name = if (labelShort.isNotBlank()) "$name $labelShort" else name,
                         url = src,
                         type = INFER_TYPE
                     ) {

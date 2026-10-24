@@ -1,8 +1,9 @@
-version = 10
+version = 12
 
 cloudstream {
     authors     = listOf("Phisher98")
     language    = "en"
+    requiresResources = false
     description = "Spankbang"
 
     /**

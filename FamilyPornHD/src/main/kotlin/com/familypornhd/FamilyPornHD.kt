@@ -1,6 +1,7 @@
 package com.familypornhd
 
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.*
 import java.net.URLEncoder
 import org.jsoup.nodes.Element
@@ -18,6 +19,9 @@ class FamilyPornHD : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.NSFW)
 
+    // passes Cloudflare's JS/managed challenge (solves it in a WebView and keeps cf_clearance)
+    private val cfKiller = CloudflareKiller()
+
     // "" is the site root (latest). Each row pages with /<path>/page/N/.
     override val mainPage = mainPageOf(
         "" to "Latest",
@@ -30,7 +34,7 @@ class FamilyPornHD : MainAPI() {
         val base = mainUrl.trimEnd('/') + "/" + request.data.trim('/').let { if (it.isEmpty()) "" else "$it/" }
         val url = if (page > 1) "${base}page/$page/" else base
 
-        val doc = app.get(url).document
+        val doc = app.get(url, interceptor = cfKiller).document
         val items = doc.select("article").mapNotNull { it.toSearchResult() }.distinctBy { it.url }
         val hasNext = items.isNotEmpty() &&
             doc.selectFirst("link[rel=next], .nav-links a.next, .g1-pagination a.next, a.g1-load-more[href]") != null
@@ -40,12 +44,12 @@ class FamilyPornHD : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val q = URLEncoder.encode(query.trim(), "UTF-8")
-        val doc = app.get("$mainUrl/?s=$q").document
+        val doc = app.get("$mainUrl/?s=$q", interceptor = cfKiller).document
         return doc.select("article").mapNotNull { it.toSearchResult() }.distinctBy { it.url }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val doc = app.get(url).document
+        val doc = app.get(url, interceptor = cfKiller).document
         val title = (doc.selectFirst("h1.entry-title")?.text() ?: doc.selectFirst("h1")?.text()
             ?: doc.selectFirst("meta[property=og:title]")?.attr("content") ?: "Video").trim()
         val poster = doc.selectFirst("meta[property=og:image]")?.attr("content")
@@ -68,7 +72,7 @@ class FamilyPornHD : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val html = app.get(data).text
+        val html = app.get(data, interceptor = cfKiller).text
         var found = false
 
         // Fire HLS Player embeds: https://<host>/(video|embed|v|e)/<hash> (slashes may be escaped)
@@ -111,7 +115,7 @@ class FamilyPornHD : MainAPI() {
             val embedUrl = "https://$host/video/$hash"
             // priming GET sets the fireplayer_player cookie the POST expects
             val cookies = try {
-                app.get(embedUrl, referer = pageRef).cookies
+                app.get(embedUrl, referer = pageRef, interceptor = cfKiller).cookies
             } catch (_: Exception) {
                 emptyMap()
             }
@@ -125,7 +129,8 @@ class FamilyPornHD : MainAPI() {
                     "Content-Type" to "application/x-www-form-urlencoded; charset=UTF-8",
                 ),
                 cookies = cookies,
-                data = mapOf("hash" to hash, "r" to "$mainUrl/")
+                data = mapOf("hash" to hash, "r" to "$mainUrl/"),
+                interceptor = cfKiller
             ).text
             (Regex(""""securedLink"\s*:\s*"([^"]+)"""").find(body)
                 ?: Regex(""""(?:videoSource|file)"\s*:\s*"([^"]+\.m3u8[^"]*)"""").find(body))

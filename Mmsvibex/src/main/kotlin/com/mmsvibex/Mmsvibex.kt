@@ -7,7 +7,6 @@ import org.jsoup.nodes.Element
 class Mmsvibex : MainAPI() {
     override var mainUrl = "https://mmsvibex.fit"
     override var name = "Mmsvibex"
-    override var lang = "hi"
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.NSFW)
 

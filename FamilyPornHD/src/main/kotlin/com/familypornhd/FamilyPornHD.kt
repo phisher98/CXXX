@@ -151,12 +151,12 @@ class FamilyPornHD : MainAPI() {
     }
 
     /**
-     * The grid thumbnail is the card's only wp-content/uploads image (bimber puts it in <img src>,
-     * sometimes behind data-src/srcset lazy attributes). Scan the whole card so it's found wherever
-     * it lives, skip the site logo/favicon, and take the largest.
+     * The grid thumbnail is the card's only wp-content/uploads image (bimber lazy-loads it, so it
+     * can sit in src, data-src, srcset or a style, and the url may be host-relative). Scan the whole
+     * card, accept absolute OR relative uploads urls, skip the site logo/favicon, and take the largest.
      */
     private val uploadImgRe =
-        Regex("""https?://[^\s"'\\<>]+?/wp-content/uploads/[^\s"'\\<>]+?\.(?:jpe?g|png|webp)""", RegexOption.IGNORE_CASE)
+        Regex("""(?:https?://[^\s"'\\<>()]+?)?/wp-content/uploads/[^\s"'\\<>()]+?\.(?:jpe?g|png|webp)""", RegexOption.IGNORE_CASE)
     private val sizeRe = Regex("""-(\d+)x(\d+)\.(?:jpe?g|png|webp)""", RegexOption.IGNORE_CASE)
 
     private fun pickImage(card: Element): String? {
@@ -165,8 +165,9 @@ class FamilyPornHD : MainAPI() {
             .toList()
         if (urls.isEmpty()) return null
         // prefer the largest sized thumbnail; an unsized url is the full-size original
-        return urls.maxByOrNull { u ->
+        val best = urls.maxByOrNull { u ->
             sizeRe.find(u)?.let { it.groupValues[1].toInt() * it.groupValues[2].toInt() } ?: Int.MAX_VALUE
         }
+        return best?.let { fixUrl(it) } // resolve host-relative /wp-content/uploads/... urls
     }
 }

@@ -144,21 +144,25 @@ class FamilyPornHD : MainAPI() {
         val a = selectFirst(".entry-title a, a[rel=bookmark]") ?: return null
         val href = a.attr("href").takeIf { it.isNotBlank() } ?: return null
         val title = a.text().trim().takeIf { it.isNotBlank() } ?: return null
-        val poster = selectFirst("img.wp-post-image, img")?.let { pickImage(it) }
+        val poster = pickImage(this)
         return newMovieSearchResponse(title, fixUrl(href), TvType.NSFW) { this.posterUrl = poster }
     }
 
-    /** bimber lazy-loads list thumbnails; take the largest srcset entry, else data-src/src. */
-    private fun pickImage(img: Element): String? {
-        val srcset = img.attr("srcset")
-        if (srcset.isNotBlank()) {
-            srcset.split(",").mapNotNull {
-                val parts = it.trim().split(Regex("\\s+"))
-                val u = parts.getOrNull(0) ?: return@mapNotNull null
-                val w = parts.getOrNull(1)?.removeSuffix("w")?.toIntOrNull() ?: 0
-                u to w
-            }.maxByOrNull { it.second }?.first?.let { if (it.isNotBlank()) return it }
+    /**
+     * bimber lazy-loads grid thumbnails, so the real url can be in src, data-src, data-lazy-src,
+     * srcset or a <noscript> fallback. Scan the whole card for any wp-content/uploads image
+     * (skipping gravatars/placeholders) and take the largest — robust to whichever attribute holds it.
+     */
+    private val uploadImgRe =
+        Regex("""https?://[^\s"'\\<>]+?/wp-content/uploads/[^\s"'\\<>]+?\.(?:jpe?g|png|webp)""", RegexOption.IGNORE_CASE)
+    private val sizeRe = Regex("""-(\d+)x(\d+)\.(?:jpe?g|png|webp)""", RegexOption.IGNORE_CASE)
+
+    private fun pickImage(card: Element): String? {
+        val urls = uploadImgRe.findAll(card.outerHtml()).map { it.value }.distinct().toList()
+        if (urls.isEmpty()) return null
+        // prefer the largest sized thumbnail; an unsized url is the full-size original
+        return urls.maxByOrNull { u ->
+            sizeRe.find(u)?.let { it.groupValues[1].toInt() * it.groupValues[2].toInt() } ?: Int.MAX_VALUE
         }
-        return img.attr("data-src").ifBlank { img.attr("src") }.takeIf { it.isNotBlank() }
     }
 }

@@ -3,6 +3,7 @@ package com.familypornhd
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import java.net.URLEncoder
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
 /**
@@ -12,11 +13,14 @@ import org.jsoup.nodes.Element
  * "securedLink" - the signed master.m3u8 - so no decryption is needed.
  */
 class FamilyPornHD : MainAPI() {
-    override var mainUrl = "https://familypornhd.com"
+    override var mainUrl = FamilyPornHDSettings.siteUrl
     override var name = "FamilyPornHD"
     override var lang = "en"
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.NSFW)
+
+    /** Every page goes through the Cloudflare bypass (saved cookie -> hidden browser -> solver). */
+    private suspend fun fetch(url: String): String = FamilyPornHDBrowser.get(url, "$mainUrl/")
 
     // "" is the site root (latest). Each row pages with /<path>/page/N/.
     override val mainPage = mainPageOf(
@@ -30,8 +34,8 @@ class FamilyPornHD : MainAPI() {
         val base = mainUrl.trimEnd('/') + "/" + request.data.trim('/').let { if (it.isEmpty()) "" else "$it/" }
         val url = if (page > 1) "${base}page/$page/" else base
 
-        val doc = app.get(url).document
-        val items = doc.select("article").mapNotNull { it.toSearchResult() }.distinctBy { it.url }
+        val doc = Jsoup.parse(fetch(url))
+        val items = doc.cards().mapNotNull { it.toSearchResult() }.distinctBy { it.url }
         val hasNext = items.isNotEmpty() &&
             doc.selectFirst("link[rel=next], .nav-links a.next, .g1-pagination a.next, a.g1-load-more[href]") != null
 
@@ -40,12 +44,12 @@ class FamilyPornHD : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val q = URLEncoder.encode(query.trim(), "UTF-8")
-        val doc = app.get("$mainUrl/?s=$q").document
-        return doc.select("article").mapNotNull { it.toSearchResult() }.distinctBy { it.url }
+        val doc = Jsoup.parse(fetch("$mainUrl/?s=$q"))
+        return doc.cards().mapNotNull { it.toSearchResult() }.distinctBy { it.url }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val doc = app.get(url).document
+        val doc = Jsoup.parse(fetch(url))
         val title = (doc.selectFirst("h1.entry-title")?.text() ?: doc.selectFirst("h1")?.text()
             ?: doc.selectFirst("meta[property=og:title]")?.attr("content") ?: "Video").trim()
         val poster = doc.selectFirst("meta[property=og:image]")?.attr("content")
@@ -68,7 +72,7 @@ class FamilyPornHD : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val html = app.get(data).text
+        val html = fetch(data)
         var found = false
 
         // Fire HLS Player embeds: https://<host>/(video|embed|v|e)/<hash> (slashes may be escaped)
@@ -135,25 +139,34 @@ class FamilyPornHD : MainAPI() {
         }
     }
 
+    /** bimber grid cards are <li class="g1-collection-item">; other layouts use <article>. */
+    private fun Element.cards() = select("li.g1-collection-item").ifEmpty { select("article") }
+
     private fun Element.toSearchResult(): SearchResponse? {
-        val a = selectFirst(".entry-title a, a[rel=bookmark]") ?: return null
+        val a = selectFirst("h3 a, .entry-title a, a[rel=bookmark]") ?: return null
         val href = a.attr("href").takeIf { it.isNotBlank() } ?: return null
-        val title = a.text().trim().takeIf { it.isNotBlank() } ?: return null
-        val poster = selectFirst("img.wp-post-image, img")?.let { pickImage(it) }
+        val title = a.text().trim().ifBlank { a.attr("title").trim() }.takeIf { it.isNotBlank() } ?: return null
+        val poster = pickImage(this)
         return newMovieSearchResponse(title, fixUrl(href), TvType.NSFW) { this.posterUrl = poster }
     }
 
-    /** bimber lazy-loads list thumbnails; take the largest srcset entry, else data-src/src. */
-    private fun pickImage(img: Element): String? {
-        val srcset = img.attr("srcset")
-        if (srcset.isNotBlank()) {
-            srcset.split(",").mapNotNull {
-                val parts = it.trim().split(Regex("\\s+"))
-                val u = parts.getOrNull(0) ?: return@mapNotNull null
-                val w = parts.getOrNull(1)?.removeSuffix("w")?.toIntOrNull() ?: 0
-                u to w
-            }.maxByOrNull { it.second }?.first?.let { if (it.isNotBlank()) return it }
+    /**
+     * The grid thumbnail is the card's only wp-content/uploads image (bimber puts it in <img src>,
+     * sometimes behind data-src/srcset lazy attributes). Scan the whole card so it's found wherever
+     * it lives, skip the site logo/favicon, and take the largest.
+     */
+    private val uploadImgRe =
+        Regex("""https?://[^\s"'\\<>]+?/wp-content/uploads/[^\s"'\\<>]+?\.(?:jpe?g|png|webp)""", RegexOption.IGNORE_CASE)
+    private val sizeRe = Regex("""-(\d+)x(\d+)\.(?:jpe?g|png|webp)""", RegexOption.IGNORE_CASE)
+
+    private fun pickImage(card: Element): String? {
+        val urls = uploadImgRe.findAll(card.outerHtml()).map { it.value }.distinct()
+            .filter { u -> !Regex("""favicon|cropped-|/logo|light-normal""", RegexOption.IGNORE_CASE).containsMatchIn(u) }
+            .toList()
+        if (urls.isEmpty()) return null
+        // prefer the largest sized thumbnail; an unsized url is the full-size original
+        return urls.maxByOrNull { u ->
+            sizeRe.find(u)?.let { it.groupValues[1].toInt() * it.groupValues[2].toInt() } ?: Int.MAX_VALUE
         }
-        return img.attr("data-src").ifBlank { img.attr("src") }.takeIf { it.isNotBlank() }
     }
 }

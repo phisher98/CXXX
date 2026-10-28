@@ -58,12 +58,17 @@ class ArchivebateProvider : MainAPI() {
         return out.values.toList()
     }
 
-    /** Video cards for a listing page: replay its Livewire grid, falling back to a rendered WebView. */
+    /**
+     * Video cards for a listing page. The grid is injected by Livewire behind an age gate, so we
+     * render the page in a WebView (which auto-accepts the gate and runs Livewire), and fall back
+     * to replaying the Livewire call directly if the render came back empty.
+     */
     private suspend fun gridFrom(pageUrl: String): List<SearchResponse> {
-        livewireGrid(pageUrl).takeIf { it.isNotEmpty() }?.let { return it }
         val html = ArchivebateBrowser.renderHtml(pageUrl, "$mainUrl/", ua, "section.video_item", 25_000L)
-        return html?.let { Jsoup.parse(it) }
+        val rendered = html?.let { Jsoup.parse(it) }
             ?.select("section.video_item")?.mapNotNull { it.toSearchResult() }?.distinctBy { it.url }.orEmpty()
+        if (rendered.isNotEmpty()) return rendered
+        return livewireGrid(pageUrl)
     }
 
     /** Pull `{...}` for [key] out of a json string, keeping it byte-exact (Livewire checksum cares). */

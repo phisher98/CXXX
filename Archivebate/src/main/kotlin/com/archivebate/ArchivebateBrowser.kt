@@ -91,6 +91,21 @@ object ArchivebateBrowser {
 })();
 """
 
+    // archivebate shows an age gate (<section id="verification"> with a #verify "Continue" button)
+    // that blocks the content until accepted - click it, persist consent, and uncover the page
+    private const val CONSENT_JS = """
+(function(){
+  try {
+    try { var mx=60*60*24*365; document.cookie='age_verified=1;path=/;max-age='+mx; document.cookie='age=1;path=/;max-age='+mx; document.cookie='verified=1;path=/;max-age='+mx; } catch(e){}
+    try { localStorage.setItem('age_verified','1'); localStorage.setItem('verified','true'); localStorage.setItem('age','1'); localStorage.setItem('ageVerified','true'); } catch(e){}
+    var b = document.querySelector('#verify') || document.querySelector('#verification button, #verification a.btn, #verification .btn, .verification button, .verification .btn');
+    if (b) { try { b.click(); } catch(e){} }
+    var v = document.querySelector('#verification, .verification'); if (v) { try { v.style.display='none'; v.remove(); } catch(e){} }
+    document.documentElement.style.overflow='auto';
+  } catch(e){}
+})();
+"""
+
     private const val TAP_JS = """
 (function(){
   try {
@@ -162,12 +177,14 @@ object ArchivebateBrowser {
             val end = System.currentTimeMillis() + timeoutMs
             while (System.currentTimeMillis() < end) {
                 delay(400L)
+                eval(wv, CONSENT_JS) // pass the age gate so the grid can render
                 val n = decode(eval(wv, "document.querySelectorAll(${jsStr(waitSelector)}).length"))?.toIntOrNull() ?: 0
                 if (n > 0) {
                     delay(400L) // let the rest of the grid settle
                     break
                 }
             }
+            eval(wv, CONSENT_JS)
             return decode(eval(wv, "document.documentElement.outerHTML"))
         } finally {
             withContext(NonCancellable + Dispatchers.Main) {
@@ -211,10 +228,12 @@ object ArchivebateBrowser {
                 w.webViewClient = object : WebViewClient() {
                     override fun onPageStarted(view: WebView?, u: String?, favicon: Bitmap?) {
                         view?.evaluateJavascript(HUSH_JS, null)
+                        view?.evaluateJavascript(CONSENT_JS, null)
                     }
 
                     override fun onPageFinished(view: WebView?, u: String?) {
                         view?.evaluateJavascript(HUSH_JS, null)
+                        view?.evaluateJavascript(CONSENT_JS, null)
                     }
 
                     // refuse top-level navigation away from the watch page (ad redirects)
@@ -276,7 +295,10 @@ object ArchivebateBrowser {
                 ) {
                     tapped++
                     try {
-                        withContext(Dispatchers.Main) { wv.evaluateJavascript(TAP_JS, null) }
+                        withContext(Dispatchers.Main) {
+                            wv.evaluateJavascript(CONSENT_JS, null)
+                            wv.evaluateJavascript(TAP_JS, null)
+                        }
                     } catch (_: Throwable) {
                     }
                 }

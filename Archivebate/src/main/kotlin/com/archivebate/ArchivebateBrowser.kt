@@ -174,10 +174,23 @@ object ArchivebateBrowser {
             return null
         }
         try {
+            val needsQuery = url.contains("?page=")
+            var reNavigated = false
             val end = System.currentTimeMillis() + timeoutMs
             while (System.currentTimeMillis() < end) {
                 delay(400L)
                 eval(wv, CONSENT_JS) // pass the age gate so the grid can render
+                // the gate can reload to "/" and drop the ?page= query; once consent is set,
+                // re-navigate to the requested page so pagination returns the right videos
+                if (needsQuery && !reNavigated) {
+                    val cur = decode(eval(wv, "location.href")).orEmpty()
+                    if (!cur.contains("page=")) {
+                        eval(wv, "location.replace(${jsStr(url)})")
+                        reNavigated = true
+                        delay(1200L)
+                        continue
+                    }
+                }
                 val n = decode(eval(wv, "document.querySelectorAll(${jsStr(waitSelector)}).length"))?.toIntOrNull() ?: 0
                 if (n > 0) {
                     delay(400L) // let the rest of the grid settle

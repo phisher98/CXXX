@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import java.net.URLEncoder
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
 /**
@@ -27,10 +28,11 @@ class ArchivebateProvider : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val base = if (request.data.isBlank()) mainUrl else "$mainUrl/${request.data}"
-        val url = if (page <= 1) "$base/" else "$base/?page=$page"
-        val items = app.get(url.replace("//?", "/?"), referer = "$mainUrl/").document
-            .select("section.video_item").mapNotNull { it.toSearchResult() }.distinctBy { it.url }
+        // the home grid is injected by Livewire, so render the page and parse the live DOM
+        val url = if (page <= 1) "$mainUrl/" else "$mainUrl/?page=$page"
+        val html = ArchivebateBrowser.renderHtml(url, "$mainUrl/", ua, "section.video_item", 25_000L)
+        val items = html?.let { Jsoup.parse(it) }
+            ?.select("section.video_item")?.mapNotNull { it.toSearchResult() }?.distinctBy { it.url }.orEmpty()
         return newHomePageResponse(
             list = HomePageList(request.name, items, isHorizontalImages = true),
             hasNext = items.isNotEmpty()
@@ -51,9 +53,10 @@ class ArchivebateProvider : MainAPI() {
         val out = LinkedHashMap<String, SearchResponse>()
         for (nm in names) {
             runCatching {
-                app.get("$mainUrl/profile/$nm", referer = "$mainUrl/").document
-                    .select("section.video_item").mapNotNull { it.toSearchResult() }
-                    .forEach { out.putIfAbsent(it.url, it) }
+                // profile video grids are also Livewire-rendered
+                val html = ArchivebateBrowser.renderHtml("$mainUrl/profile/$nm", "$mainUrl/", ua, "section.video_item", 20_000L)
+                html?.let { Jsoup.parse(it) }?.select("section.video_item")?.mapNotNull { it.toSearchResult() }
+                    ?.forEach { out.putIfAbsent(it.url, it) }
             }
         }
         return out.values.toList()

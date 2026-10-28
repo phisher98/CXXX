@@ -14,10 +14,13 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import java.io.ByteArrayInputStream
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import org.json.JSONArray
 
 /**
  * Hidden WebView sniffer for archivebate.com. The /watch/<id> page loads its player through Livewire,
@@ -98,6 +101,85 @@ object ArchivebateBrowser {
   } catch(e){}
 })();
 """
+
+    private suspend fun eval(wv: WebView, js: String): String? = withContext(Dispatchers.Main) {
+        val d = CompletableDeferred<String?>()
+        try {
+            wv.evaluateJavascript(js) { d.complete(it) }
+        } catch (_: Throwable) {
+            d.complete(null)
+        }
+        withTimeoutOrNull(5_000L) { d.await() }
+    }
+
+    /** Decodes a JSON-encoded string result from evaluateJavascript. */
+    private fun decode(result: String?): String? {
+        if (result == null || result == "null") return null
+        return try {
+            JSONArray("[$result]").getString(0)
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    /**
+     * Loads [url] in a WebView so its Livewire listing renders, waits until [waitSelector] appears,
+     * and returns the live DOM html. The home/profile grids are injected by Livewire, so a plain
+     * http fetch returns empty containers - this gives the rendered page to parse with Jsoup.
+     */
+    @SuppressLint("SetJavaScriptEnabled")
+    suspend fun renderHtml(
+        url: String, referer: String, userAgent: String, waitSelector: String, timeoutMs: Long
+    ): String? {
+        val ctx = appContext ?: return null
+        val wv: WebView = try {
+            withContext(Dispatchers.Main) {
+                val w = WebView(ctx)
+                w.settings.apply {
+                    javaScriptEnabled = true
+                    domStorageEnabled = true
+                    userAgentString = userAgent
+                    mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                    loadsImagesAutomatically = false
+                    blockNetworkImage = true
+                }
+                w.measure(
+                    View.MeasureSpec.makeMeasureSpec(1280, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(2400, View.MeasureSpec.EXACTLY)
+                )
+                w.layout(0, 0, 1280, 2400)
+                CookieManager.getInstance().setAcceptCookie(true)
+                CookieManager.getInstance().setAcceptThirdPartyCookies(w, true)
+                w.webViewClient = WebViewClient()
+                w.webChromeClient = WebChromeClient()
+                w.loadUrl(url, mapOf("Referer" to referer))
+                w
+            }
+        } catch (_: Throwable) {
+            return null
+        }
+        try {
+            val end = System.currentTimeMillis() + timeoutMs
+            while (System.currentTimeMillis() < end) {
+                delay(400L)
+                val n = decode(eval(wv, "document.querySelectorAll(${jsStr(waitSelector)}).length"))?.toIntOrNull() ?: 0
+                if (n > 0) {
+                    delay(400L) // let the rest of the grid settle
+                    break
+                }
+            }
+            return decode(eval(wv, "document.documentElement.outerHTML"))
+        } finally {
+            withContext(NonCancellable + Dispatchers.Main) {
+                try {
+                    wv.stopLoading(); wv.loadUrl("about:blank"); wv.destroy()
+                } catch (_: Throwable) {
+                }
+            }
+        }
+    }
+
+    private fun jsStr(s: String) = "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
     /** Loads [url] and returns the embed/media urls the player requested, best (embed) first. */
     @SuppressLint("SetJavaScriptEnabled")

@@ -1,6 +1,5 @@
 package com.CXXX
 
-import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -16,28 +15,30 @@ class SuperJav : MainAPI() {
     override val vpnStatus            = VPNStatus.MightBeNeeded
     private val subtitleCatUrl        = "https://www.subtitlecat.com"
 
+    // real supjav categories (+ a couple of popular tags); every row paginates via /page/N/
     override val mainPage = mainPageOf(
-        "category/censored-jav" to "Censored Jav",
-        "category/english-subtitles" to "English Jav",
+        "category/censored-jav" to "Censored",
+        "category/uncensored-jav" to "Uncensored",
+        "category/english-subtitles" to "English Subtitles",
+        "category/chinese-subtitles" to "Chinese Subtitles",
+        "category/amateur" to "Amateur",
+        "category/reducing-mosaic" to "Reducing Mosaic",
         "tag/4k" to "4K",
         "tag/stepmother" to "Step Mother",
-        "tag/tits" to "Tits",
-        "reducing-mosaic" to "Reducing Mosaic",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url = if (page <= 1) "$mainUrl/${request.data}/" else "$mainUrl/${request.data}/page/$page/"
         val document = app.get(url).document
-        val home = document.select("div.post").mapNotNull {
-            it.toSearchResult()
-        }
+        val home = document.select("div.post").mapNotNull { it.toSearchResult() }.distinctBy { it.url }
 
         return newHomePageResponse(
             list = HomePageList(
                 name = request.name,
-                list = home.distinctBy { it.url },
+                list = home,
                 isHorizontalImages = true
             ),
+            // keep loading the next /page/N/ as the user scrolls this category
             hasNext = home.isNotEmpty()
         )
     }
@@ -50,11 +51,11 @@ class SuperJav : MainAPI() {
             ?: return null
 
         val img = this.selectFirst("img")
-        val posterUrl = fixUrlNull(
-            img?.attr("data-original")?.takeIf { it.isNotBlank() }
-                ?: img?.attr("data-src")?.takeIf { it.isNotBlank() }
-                ?: img?.attr("src")?.takeIf { it.isNotBlank() }
-        )
+        // the real thumbnail is in data-original (src is a base64 placeholder)
+        val raw = img?.attr("data-original")?.takeIf { it.isNotBlank() }
+            ?: img?.attr("data-src")?.takeIf { it.isNotBlank() }
+            ?: img?.attr("src")?.takeIf { it.isNotBlank() && !it.startsWith("data:") }
+        val posterUrl = fixUrlNull(raw)
 
         return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
@@ -82,8 +83,8 @@ class SuperJav : MainAPI() {
         val title = document.selectFirst("div.archive-title h1, meta[property='og:title']")?.text()?.trim()
             ?: document.title().substringBefore(" - SupJav").trim()
         val poster = fixUrlNull(
-            document.selectFirst("div.post-meta img, meta[property='og:image']")?.attr("src")
-                ?: document.selectFirst("meta[property='og:image']")?.attr("content")
+            document.selectFirst("meta[property='og:image']")?.attr("content")
+                ?: document.selectFirst("div.post-meta img")?.attr("src")
         )
         val description = document.selectFirst("div.post-meta h2, meta[property='og:description']")?.text()?.trim()
         val tags = document.select("div.tags a, a[href*='/tag/'], a[href*='/category/']")
@@ -112,6 +113,8 @@ class SuperJav : MainAPI() {
     ): Boolean {
         val doc = app.get(data).document
 
+        // each server button carries an encrypted data-link resolved through the supremejav gateway:
+        //   supjav.php?l=<data-link>  ->  var OLID='...'  ->  supjav.php?c=<reversed OLID>  ->  302 to the embed
         doc.select("a.btn-server").amap {
             val rawLink = it.attr("data-link")
             if (rawLink.isNotBlank()) {
@@ -124,7 +127,6 @@ class SuperJav : MainAPI() {
                         val sourcefetch = app.get(fetchurl, referer = gateway, allowRedirects = false)
                             .headers["location"].orEmpty()
                         if (sourcefetch.isNotBlank()) {
-                            Log.d("Phisher", sourcefetch)
                             loadExtractor(sourcefetch, referer = "$mainUrl/", subtitleCallback, callback)
                         }
                     }
@@ -161,7 +163,7 @@ class SuperJav : MainAPI() {
                                     val subUrl = "$subtitleCatUrl${text[0].attr("href")}"
                                     subtitleCallback.invoke(
                                         newSubtitleFile(
-                                            language.replace("\uD83D\uDC4D \uD83D\uDC4E", "").trim(),
+                                            language.replace("👍 👎", "").trim(),
                                             subUrl
                                         )
                                     )
@@ -180,6 +182,13 @@ class SuperJav : MainAPI() {
 class watchadsontape : StreamTape() {
     override var mainUrl = "https://watchadsontape.com"
     override var name = "StreamTape"
+}
+
+/** LUC server - luminscdn.xyz uses the jw8 / new100 StreamWish/Vidhide player family. */
+class Luminscdn : VidhideExtractor() {
+    override var mainUrl = "https://luminscdn.xyz"
+    override var name = "Luminscdn"
+    override val requiresReferer = false
 }
 
 open class EmturbovidExtractor : ExtractorApi() {

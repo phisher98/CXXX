@@ -45,13 +45,25 @@ class ArchivebateProvider : MainAPI() {
     @JsonIgnoreProperties(ignoreUnknown = true)
     private data class SearchItem(val username: String? = null)
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private data class SearchApi(val data: List<SearchItem>? = null)
+
     override suspend fun search(query: String): List<SearchResponse> {
         val q = URLEncoder.encode(query.trim(), "UTF-8")
-        // the site search api returns matching performer usernames; their videos live on /profile/<name>
+        // the search api returns {"data":[{username,...}]} and needs the ajax headers or Laravel
+        // serves html; the matching performers' videos then live on /profile/<name>
         val names = runCatching {
-            app.get("$mainUrl/api/v1/search?query=$q", referer = "$mainUrl/", interceptor = cf)
-                .parsedSafe<List<SearchItem>>()
-        }.getOrNull().orEmpty().mapNotNull { it.username?.trim()?.takeIf { n -> n.isNotBlank() } }.distinct().take(4)
+            app.get(
+                "$mainUrl/api/v1/search?query=$q",
+                referer = "$mainUrl/",
+                headers = mapOf(
+                    "X-Requested-With" to "XMLHttpRequest",
+                    "Accept" to "application/json, text/javascript, */*; q=0.01",
+                    "User-Agent" to ua,
+                ),
+                interceptor = cf
+            ).parsedSafe<SearchApi>()?.data
+        }.getOrNull().orEmpty().mapNotNull { it.username?.trim()?.takeIf { n -> n.isNotBlank() } }.distinct().take(3)
 
         val out = LinkedHashMap<String, SearchResponse>()
         for (nm in names) gridFrom("$mainUrl/profile/$nm").forEach { out.putIfAbsent(it.url, it) }

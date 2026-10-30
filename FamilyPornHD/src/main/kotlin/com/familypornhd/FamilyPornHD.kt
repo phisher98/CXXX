@@ -39,7 +39,7 @@ class FamilyPornHD : MainAPI() {
         val hasNext = items.isNotEmpty() &&
             doc.selectFirst("link[rel=next], .nav-links a.next, .g1-pagination a.next, a.g1-load-more[href]") != null
 
-        return newHomePageResponse(request.name, items, hasNext = hasNext)
+        return newHomePageResponse(HomePageList(request.name, items, isHorizontalImages = true), hasNext)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
@@ -61,6 +61,7 @@ class FamilyPornHD : MainAPI() {
 
         return newMovieLoadResponse(title, url, TvType.NSFW, url) {
             this.posterUrl = poster
+            this.posterHeaders = FamilyPornHDBrowser.posterHeaders()
             this.plot = plot
             this.tags = tags
         }
@@ -147,7 +148,10 @@ class FamilyPornHD : MainAPI() {
         val href = a.attr("href").takeIf { it.isNotBlank() } ?: return null
         val title = a.text().trim().ifBlank { a.attr("title").trim() }.takeIf { it.isNotBlank() } ?: return null
         val poster = pickImage(this)
-        return newMovieSearchResponse(title, fixUrl(href), TvType.NSFW) { this.posterUrl = poster }
+        return newMovieSearchResponse(title, fixUrl(href), TvType.NSFW) {
+            this.posterUrl = poster
+            this.posterHeaders = FamilyPornHDBrowser.posterHeaders()
+        }
     }
 
     /**

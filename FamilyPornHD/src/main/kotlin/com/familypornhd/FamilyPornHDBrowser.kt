@@ -115,6 +115,14 @@ object FamilyPornHDBrowser {
 
     fun hasClearance(): Boolean = cookies()?.contains("cf_clearance") == true
 
+    fun posterHeaders(): Map<String, String> {
+        val h = LinkedHashMap<String, String>()
+        h["User-Agent"] = userAgent()
+        h["Referer"] = home()
+        cookies()?.takeIf { it.isNotBlank() }?.let { h["Cookie"] = it }
+        return h
+    }
+
     fun isChallenge(code: Int, body: String): Boolean {
         val head = body.take(4000)
         return code == 403 || code == 503 || code == 429 ||

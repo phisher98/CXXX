@@ -198,12 +198,22 @@ class TaboodaddyProvider : MainAPI() {
         return true
     }
 
-    /** Pulls the media url out of the player iframe's base64 "q" payload. */
-    private fun decodePlayerTag(q: String): String? = runCatching {
-        val raw = android.util.Base64.decode(
-            q.replace('-', '+').replace('_', '/'),
-            android.util.Base64.NO_WRAP
-        )
+    /**
+     * Pulls the media url out of the player iframe's base64 "q" payload.
+     *
+     * url-encoded base64url, so it has to be undone in that order: percent-decode, map -_ back
+     * to +/, restore the padding the url may have eaten, base64-decode, then percent-decode the
+     * html that comes out. Without the padding step the decoder throws on any value whose length
+     * is not a multiple of four, and the link silently disappears.
+     */
+    private fun decodePlayerTag(qRaw: String): String? = runCatching {
+        val q = java.net.URLDecoder.decode(qRaw, "UTF-8")
+            .replace(' ', '+')
+            .replace('-', '+')
+            .replace('_', '/')
+            .trimEnd('=')
+        val padded = q + "=".repeat((4 - q.length % 4) % 4)
+        val raw = android.util.Base64.decode(padded, android.util.Base64.NO_WRAP)
         val text = String(raw, Charsets.UTF_8)
         val tag = java.net.URLDecoder.decode(text, "UTF-8")
         Regex("""src=["']([^"']+\.(?:m3u8|mp4)[^"']*)["']""")

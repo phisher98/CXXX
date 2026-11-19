@@ -10,5 +10,8 @@ class AllPornStreamPlugin: Plugin() {
         registerMainAPI(AllPornStream())
         registerExtractorAPI(StreamTapeto())
         registerExtractorAPI(BigwarpIO())
+        registerExtractorAPI(StreamTapeCom())
+        registerExtractorAPI(Dsvplay())
+        registerExtractorAPI(MixDropTop())
     }
 }

@@ -27,6 +27,31 @@ class Hanime : MainAPI() {
 
     override var mainUrl = "https://hanime.tv"
     override var name = "Hanime"
+
+    private val browserUA =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+
+    // hanime's JSON API answers plain requests with an HTML/Cloudflare page; the web client signs each call
+    // with these headers (any 32+ char hex signature is accepted) and then gets JSON back.
+    private fun apiHeaders(): Map<String, String> = mapOf(
+        "X-Signature-Version" to "web2",
+        "X-Signature" to (1..64).map { "0123456789abcdef".random() }.joinToString(""),
+        "User-Agent" to browserUA,
+        "Accept" to "application/json, text/plain, */*",
+        "Origin" to mainUrl,
+        "Referer" to "$mainUrl/",
+    )
+
+    private suspend fun getVideoJson(id: String): String? {
+        // retry once with a fresh signature; anything that isn't JSON (Cloudflare/HTML) counts as a failure
+        repeat(2) {
+            val text = runCatching {
+                app.get("$mainUrl/api/v8/video?id=$id", headers = apiHeaders(), timeout = 20).text
+            }.getOrNull()
+            if (text != null && text.trimStart().startsWith("{")) return text
+        }
+        return null
+    }
     override val hasQuickSearch = false
     override val hasMainPage = true
     override val hasDownloadSupport = true
@@ -97,8 +122,7 @@ class Hanime : MainAPI() {
         request: MainPageRequest
     ): HomePageResponse {
 
-        val requestGet = app.get("https://hanime.tv/")
-        globalHeaders = requestGet.headers.toMap()
+        val requestGet = app.get("https://hanime.tv/", headers = mapOf("User-Agent" to browserUA))
         val data = requestGet.text
         val jsonText = Regex("""window\.__NUXT__=(.*?);</script>""").find(data)?.destructured?.component1()
         val titles = ArrayList<String>()
@@ -166,7 +190,7 @@ class Hanime : MainAPI() {
         val response = app.post(
             url = link,
             json = data,
-            headers = globalHeaders
+            headers = headers + mapOf("User-Agent" to browserUA, "Content-Type" to "application/json;charset=UTF-8")
         )
         val responseText = response.text
         val titles = ArrayList<String>()
@@ -216,9 +240,9 @@ class Hanime : MainAPI() {
     )
 
     private data class Streams (
-        @JsonProperty("height") val height : String,
-        @JsonProperty("filesize_mbs") val filesizeMbs : Int,
-        @JsonProperty("url") val url : String,
+        @JsonProperty("height") val height : String = "",
+        @JsonProperty("filesize_mbs") val filesizeMbs : Int? = null,
+        @JsonProperty("url") val url : String = "",
     )
 
     private data class Servers (
@@ -238,26 +262,24 @@ class Hanime : MainAPI() {
     )
 
     override suspend fun load(url: String): LoadResponse {
-        val params: List<Pair<String, String>> = url.split("?")[1].split("&").map {
-            val split = it.split("=")
-            Pair(split[0], split[1])
-        }
-        val id = params[0].second
-        val title = params[1].second
+        val query = url.substringAfter("?", "")
+        val params = query.split("&").mapNotNull {
+            val split = it.split("=", limit = 2)
+            if (split.size == 2) split[0] to java.net.URLDecoder.decode(split[1], "UTF-8") else null
+        }.toMap()
+        val id = params["id"] ?: url.substringAfter("/videos/hentai/").substringBefore("?")
+        val title = params["title"] ?: id
 
-        val uri = "$mainUrl/api/v8/video?id=${id}&"
-        val response = app.get(uri)
-
-        val data = tryParseJson<HanimeEpisodeData>(response.text)
+        val data = tryParseJson<HanimeEpisodeData>(getVideoJson(id))
             ?: throw ErrorLoadingException("Failed to parse episode data")
 
         val tags = data.hentaiTags.map { it.text }
 
         val episodes = data.hentaiFranchiseHentaiVideos.map {
             newEpisode(
-                url = "$mainUrl/api/v8/video?id=${it.id}&",
+                url = "${it.id}",
             ).apply {
-                this.data = "$mainUrl/api/v8/video?id=${it.id}&"
+                this.data = "${it.id}"
                 this.name = it.name
                 this.posterUrl = it.posterUrl
             }
@@ -286,8 +308,9 @@ class Hanime : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val res = app.get(data).text
-        val response = tryParseJson<HanimeEpisodeData>(res)
+        // episode data is the video id (older builds stored the full api url)
+        val id = Regex("""[?&]id=([^&]+)""").find(data)?.groupValues?.get(1) ?: data
+        val response = tryParseJson<HanimeEpisodeData>(getVideoJson(id))
 
         response?.videosManifest?.servers?.forEach { server ->
             server.streams.forEach { stream ->
@@ -296,10 +319,12 @@ class Hanime : MainAPI() {
                         callback.invoke(
                             newExtractorLink(
                                 source = "Hanime",
-                                name = "Hanime - ${server.name} - ${stream.filesizeMbs}mb",
+                                name = "Hanime - ${server.name}" + (stream.filesizeMbs?.let { " - ${it}mb" } ?: ""),
                                 url = stream.url,
                                 type = ExtractorLinkType.M3U8
                             ) {
+                                this.referer = "$mainUrl/"
+                                this.headers = mapOf("Origin" to mainUrl, "User-Agent" to browserUA)
                                 this.quality = getQualityFromName(stream.height)
                             }
                         )
@@ -309,6 +334,6 @@ class Hanime : MainAPI() {
                 }
             }
         }
-        return true
+        return response?.videosManifest?.servers?.any { srv -> srv.streams.any { it.url.isNotEmpty() } } == true
     }
 }

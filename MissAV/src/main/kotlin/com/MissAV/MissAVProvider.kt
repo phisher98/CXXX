@@ -96,21 +96,55 @@ class MissAVProvider : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
 
 
-            val data = app.get(data)
-            val doc = data.document
-            getAndUnpack(data.text).let { unpackedText ->
-                val linkList = unpackedText.split(";")
-                val finalLink = "source='(.*)'".toRegex().find(linkList.first())?.groups?.get(1)?.value
+            val response = app.get(data, referer = "$mainUrl/")
+            val doc = response.document
+            val html = response.text
+
+            // The player source is packed (eval(function(p,a,c,k,e,d)...)). The page now carries two packed
+            // blocks (the second is an anti-hotlink host check), so unpack every block, not just the first.
+            val unpacked = Regex("""eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^)]*\)\)""")
+                .findAll(html)
+                .mapNotNull { runCatching { JsUnpacker(it.value).unpack() }.getOrNull() }
+                .joinToString(";")
+                .ifBlank { runCatching { getAndUnpack(html) }.getOrDefault("") }
+
+            val candidates = linkedSetOf<String>()
+            Regex("""source\w*\s*=\s*['"](https?://[^'"]+\.m3u8[^'"]*)['"]""").findAll(unpacked)
+                .forEach { candidates.add(it.groupValues[1]) }
+
+            // surrit.com now answers 403 to direct playlist requests while b.surrit.com serves the same
+            // playlists, so build (and prefer) the b.surrit.com variant from the video uuid.
+            val uuid = Regex("""surrit\.com\\?/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})""")
+                .find(unpacked)?.groupValues?.get(1)
+                ?: Regex("""surrit\.com\\?/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})""")
+                    .find(html)?.groupValues?.get(1)
+
+            val ordered = buildList {
+                if (uuid != null) add("https://b.surrit.com/$uuid/playlist.m3u8")
+                candidates.forEach { add(it.replace("://surrit.com/", "://b.surrit.com/")) }
+                addAll(candidates)
+            }.distinct()
+
+            val hlsHeaders = mapOf("Origin" to mainUrl, "Referer" to "$mainUrl/")
+            val playable = ordered.firstOrNull { url ->
+                runCatching {
+                    val r = app.get(url, headers = hlsHeaders, timeout = 15)
+                    r.isSuccessful && r.text.trimStart().startsWith("#EXTM3U")
+                }.getOrDefault(false)
+            } ?: ordered.firstOrNull()
+
+            if (playable != null) {
                 callback.invoke(
                     newExtractorLink(
-                    source = name,
-                    name = name,
-                    url = finalLink.toString(),
-                    ExtractorLinkType.M3U8
-                ) {
-                    this.referer = ""
-                    this.quality = Qualities.Unknown.value
-                }
+                        source = name,
+                        name = name,
+                        url = playable,
+                        type = ExtractorLinkType.M3U8
+                    ) {
+                        this.referer = "$mainUrl/"
+                        this.headers = hlsHeaders
+                        this.quality = Qualities.Unknown.value
+                    }
                 )
             }
 

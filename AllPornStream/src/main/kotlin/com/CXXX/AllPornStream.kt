@@ -40,8 +40,8 @@ class AllPornStream : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        // request.data already starts with '?', so append directly without extra slash
-        val url = "$mainUrl/${request.data}&page=$page"
+        // The studio filter moved from "/?studio=" to "/posts?studio=" (the root page ignores it now)
+        val url = "$mainUrl/posts${request.data}&page=$page"
         val doc = app.get(url).document
 
         val json = doc.select("script[type=application/ld+json]")
@@ -92,7 +92,7 @@ class AllPornStream : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
         for (page in 1..3) {
-            val doc = app.get("$mainUrl/?search=${query.encodeUri()}&page=$page").document
+            val doc = app.get("$mainUrl/posts?search=${query.encodeUri()}&page=$page").document
             val json = doc.select("script[type=application/ld+json]")
                 .firstOrNull { it.data().contains("ItemList") }
                 ?.data() ?: break
@@ -129,7 +129,7 @@ class AllPornStream : MainAPI() {
 
         // Extract embed URLs via regex from the Next.js page source
         val pageHtml = doc.html()
-        val embedUrls = Regex("""embed_url\\?":\\?"(https?:[^\\"]+)""")
+        val embedUrls = Regex("""embed_?[uU]rl\\?"\s*:\s*\\?"(https?:[^\\"]+)""")
             .findAll(pageHtml)
             .map { it.groupValues[1] }
             .distinct()

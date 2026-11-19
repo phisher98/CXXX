@@ -167,10 +167,30 @@ class JavGuru : MainAPI() {
             .toList()
 
         var found = false
+        // Older posts expose the hoster iframe directly instead of the base64 "iframe_url" list
+        val directIframes = Regex("""<iframe[^>]+src=["'](https?://[^"']+)["']""").findAll(pageBody)
+            .map { it.groupValues[1] }
+            .filterNot { it.contains("jav.guru") || it.contains("google") || it.contains("disqus") }
+            .toList()
+
+        directIframes.forEach { iframe ->
+            runCatching {
+                if (loadExtractor(iframe, "$mainUrl/", subtitleCallback, callback)) found = true
+            }
+        }
+
         servers.forEachIndexed { index, searcho ->
             runCatching {
-                val searchoPage = app.get(searcho, referer = "$mainUrl/").text
-                val realSrc = resolveSearcho(searchoPage) ?: return@runCatching
+                val searchoResp = app.get(searcho, referer = "$mainUrl/")
+                val searchoPage = searchoResp.text
+                // Some servers now go through an intermediate shortener / redirect page; when the
+                // token markup isn't there, follow wherever the redirect chain ended up instead.
+                val realSrc = resolveSearcho(searchoPage)
+                    ?: Regex("""(?:window\.location(?:\.href)?\s*=|location\.replace\()\s*['"](https?://[^'"]+)""")
+                        .find(searchoPage)?.groupValues?.get(1)
+                    ?: Regex("""<iframe[^>]+src=["'](https?://[^"']+)""").find(searchoPage)?.groupValues?.get(1)
+                    ?: searchoResp.url.takeIf { !it.contains("jav.guru") }
+                    ?: return@runCatching
                 val resp = app.get(realSrc, referer = searcho)
                 val embedUrl = resp.url
 
@@ -179,7 +199,12 @@ class JavGuru : MainAPI() {
                     return@runCatching
                 }
 
-                val link = extractPackedHls(resp.text, embedUrl) ?: return@runCatching
+                val link = extractPackedHls(resp.text, embedUrl)
+                if (link == null) {
+                    // Not a packed-HLS host: hand it to the regular extractors (StreamTape, Dood, Wish, Voe, ...)
+                    if (loadExtractor(embedUrl, "$mainUrl/", subtitleCallback, callback)) found = true
+                    return@runCatching
+                }
                 found = true
                 callback.invoke(
                     newExtractorLink(

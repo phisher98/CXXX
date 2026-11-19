@@ -3,6 +3,8 @@ package com.CXXX
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.extractors.StreamTape
+import com.lagradost.cloudstream3.extractors.DoodLaExtractor
+import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -48,4 +50,17 @@ open class BigwarpIO : ExtractorApi() {
             )
         }
     }
+}
+
+// Hosts currently used by allpornstream.com embeds
+class StreamTapeCom : StreamTape() {
+    override var mainUrl = "https://streamtape.com"
+}
+
+class Dsvplay : DoodLaExtractor() {
+    override var mainUrl = "https://dsvplay.com"
+}
+
+class MixDropTop : MixDrop() {
+    override var mainUrl = "https://mixdrop.top"
 }

@@ -87,50 +87,52 @@ class Pornmz : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).document
-        val docText  = document.toString()
+        val document = app.get(data, referer = "$mainUrl/").document
+        val found = linkedSetOf<String>()
 
-        // 1) Direct JS variable extraction
-        val jsRegex = Regex("""(?:video_url|file|src)\s*[:=]\s*['"]?(https?://[^'",\s>]+\.mp4[^'",\s>]*)['"]?""")
-        val jsLinks = jsRegex.findAll(docText).map { it.groupValues[1] }.distinct().toList()
-        for (link in jsLinks) {
-            callback.invoke(
-                newExtractorLink(
-                    source = this.name,
-                    name   = this.name,
-                    url    = link
-                ) {
-                    this.referer = mainUrl
-                    this.quality = Qualities.Unknown.value
-                }
-            )
+        // 1) Schema.org <meta itemprop="contentUrl"> — the site now stores the HLS (video.twimg.com) url here
+        document.select("meta[itemprop=contentUrl]").forEach { meta ->
+            meta.attr("content").takeIf { it.startsWith("http") }?.let { found.add(it) }
         }
 
-        // 2) Try iframes
+        // 2) Internal player iframe (/wp-content/plugins/clean-tube-player/public/player-x.php?q=...)
+        //    which contains a plain <video><source src=...m3u8></video>
         document.select("iframe[src], iframe[data-src]").forEach { iframe ->
-            val iframeSrc = iframe.attr("src").ifBlank { iframe.attr("data-src") }
-            if (iframeSrc.isNotBlank()) {
+            val iframeSrc = fixUrlNull(iframe.attr("src").ifBlank { iframe.attr("data-src") }) ?: return@forEach
+            if (iframeSrc.contains("pornmz", true) || iframeSrc.contains("player-x.php")) {
+                runCatching {
+                    val playerDoc = app.get(iframeSrc, referer = data).document
+                    playerDoc.select("video source[src], video[src]").forEach { el ->
+                        fixUrlNull(el.attr("src"))?.let { found.add(it) }
+                    }
+                }
+            } else {
                 runCatching { loadExtractor(iframeSrc, data, subtitleCallback, callback) }
             }
         }
 
-        // 3) Direct source tags
-        document.select("source[src]").forEach { source ->
-            val src = source.attr("src")
-            if (src.isNotBlank() && (src.contains(".mp4") || src.contains(".m3u8"))) {
-                callback.invoke(
-                    newExtractorLink(
-                        source = this.name,
-                        name   = this.name,
-                        url    = src
-                    ) {
-                        this.referer = mainUrl
-                        this.quality = Qualities.Unknown.value
-                    }
-                )
-            }
+        // 3) Direct <source> tags / js variables on the page itself (older posts)
+        document.select("video source[src]").forEach { el -> fixUrlNull(el.attr("src"))?.let { found.add(it) } }
+        Regex("""(?:video_url|file)\s*[:=]\s*['"](https?://[^'"\s]+\.(?:mp4|m3u8)[^'"\s]*)['"]""")
+            .findAll(document.html()).forEach { found.add(it.groupValues[1]) }
+
+        found.filter { it.contains(".m3u8") || it.contains(".mp4") }.forEach { link ->
+            val isHls = link.contains(".m3u8")
+            callback.invoke(
+                newExtractorLink(
+                    source = this.name,
+                    name = this.name,
+                    url = link,
+                    type = if (isHls) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
+                ) {
+                    // twimg rejects foreign referers, so only send one for the site's own CDN
+                    this.referer = if (link.contains("twimg.com")) "" else "$mainUrl/"
+                    this.quality = Regex("""(\d{3,4})p""").find(link)?.groupValues?.get(1)?.toIntOrNull()
+                        ?: Qualities.Unknown.value
+                }
+            )
         }
 
-        return true
+        return found.isNotEmpty()
     }
 }

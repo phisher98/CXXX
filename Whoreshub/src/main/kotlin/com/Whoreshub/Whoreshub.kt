@@ -36,9 +36,10 @@ class Whoreshub : MainAPI() {
 
     private fun Element.toSearchResult(): SearchResponse? {
         val title = this.attr("title").takeIf { it.isNotBlank() } ?: return null
-        val href = fixUrlNull(this.attr("href")) ?: return null
-        val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("data-src")
-            ?: this.selectFirst("img")?.attr("src"))
+        val href = fixUrlNull(this.attr("href"))?.takeIf { it.contains("/videos/") } ?: return null
+        val img = this.selectFirst("img")
+        val posterUrl = fixUrlNull(img?.attr("data-src")?.takeIf { it.isNotBlank() }
+            ?: img?.attr("src")?.takeIf { it.startsWith("http") || it.startsWith("//") })
 
         return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
@@ -48,7 +49,7 @@ class Whoreshub : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
         val encoded = query.trim().replace(" ", "+")
-        val document = app.get("${mainUrl}/search/?q=$encoded").document
+        val document = app.get("${mainUrl}/search/${encoded.replace("+", "-")}/").document
         val results = document.select("div.block-thumbs a.item").mapNotNull { it.toSearchResult() }
         searchResponse.addAll(results)
         return searchResponse
@@ -72,40 +73,48 @@ class Whoreshub : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).document
-        val docText = document.toString()
+        val document = app.get(data, referer = "$mainUrl/").document
+        val docText = document.html()
 
-        // Try JS variable extraction first (common tube format)
-        val jsRegex = Regex("""(?:video_url|video_alt_url[23]?)\s*[:=]\s*['"]?(https?://[^'",\s]+)['"]?""")
-        val jsLinks = jsRegex.findAll(docText).map { it.groupValues[1] }.distinct().toList()
-
-        for (link in jsLinks) {
-            if (link.isNotEmpty()) {
-                callback.invoke(
-                    newExtractorLink(
-                        source = this.name,
-                        name = this.name,
-                        url = link
-                    ) {
-                        this.referer = mainUrl
-                        this.quality = Regex("""_(1080|720|480|360)p""")
-                            .find(link)?.groupValues?.getOrNull(1)?.toIntOrNull()
-                            ?: Qualities.Unknown.value
-                    }
-                )
-            }
+        // KVS player flashvars: video_url / video_alt_url[N] with matching *_text quality labels,
+        // e.g. video_url: 'https://www.whoreshub.com/get_file/8/<hash>/771000/771931/771931.mp4/?v-acctoken=...'
+        val jsLinks = mutableListOf<String>()
+        Regex("""(video_url|video_alt_url\d*)\s*:\s*'([^']+)'""").findAll(docText).forEach { m ->
+            val key = m.groupValues[1]
+            var link = m.groupValues[2]
+            if (link.startsWith("function/")) return@forEach // obfuscated variant (license_code) not supported
+            if (!link.startsWith("http")) link = fixUrl(link)
+            if (link in jsLinks) return@forEach
+            jsLinks.add(link)
+            val label = Regex("""${key}_text\s*:\s*'([^']*)'""").find(docText)?.groupValues?.get(1).orEmpty()
+            callback.invoke(
+                newExtractorLink(
+                    source = this.name,
+                    name = if (label.isNotBlank()) "${this.name} $label" else this.name,
+                    url = link,
+                    type = ExtractorLinkType.VIDEO
+                ) {
+                    // get_file links are tied to the watch page; send it as referer
+                    this.referer = data
+                    this.headers = mapOf("Origin" to mainUrl)
+                    this.quality = Regex("""(\d{3,4})p""").find(label)?.groupValues?.get(1)?.toIntOrNull()
+                        ?: Regex("""_(\d{3,4})p""").find(link)?.groupValues?.get(1)?.toIntOrNull()
+                        ?: Qualities.Unknown.value
+                }
+            )
         }
 
-        // Fallback: try iframes
+        // Fallback: embedded hosts (skip ad iframes on the site itself)
+        var iframeFound = false
         if (jsLinks.isEmpty()) {
-            document.select("iframe[src]").forEach { iframe ->
+            document.select("div.player iframe[src], div.video-holder iframe[src], .embed-wrap iframe[src]").forEach { iframe ->
                 val iframeSrc = iframe.attr("src")
                 if (iframeSrc.isNotBlank()) {
-                    runCatching { loadExtractor(iframeSrc, data, subtitleCallback, callback) }
+                    runCatching { if (loadExtractor(iframeSrc, data, subtitleCallback, callback)) iframeFound = true }
                 }
             }
         }
 
-        return true
+        return jsLinks.isNotEmpty() || iframeFound
     }
 }

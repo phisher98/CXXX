@@ -132,7 +132,14 @@ class Spankbang : MainAPI() {
     }
 
     private fun parseVideos(document: Document): List<SearchResponse> {
-        val containers = document.select("div[data-testid=video-item]")
+        // Every page has a header "videos" dropdown (a .js-forced-layout video-list with the same
+        // 8 trending videos). Skip it, otherwise every category starts with identical items.
+        val containers = document.select("div[data-testid=video-item]").filterNot { item ->
+            item.parents().any { p ->
+                p.hasClass("js-forced-layout") || p.attr("data-testid") == "header-video-dropdown" ||
+                    p.tagName() == "header" || p.tagName() == "nav"
+            }
+        }
         val containerResults = containers.mapNotNull { it.toSearchResult() }
         val results = if (containerResults.isNotEmpty()) {
             containerResults
@@ -287,16 +294,11 @@ class Spankbang : MainAPI() {
 
             val m3u8 = isM3u8 || cleanUrl.contains(".m3u8")
             val qualityInt = parseQuality(qualityStr)
-            val nameStr = if (qualityStr.isNotBlank() && qualityStr.lowercase() != "video" && qualityStr.lowercase() != "unknown") {
-                "${this.name} $qualityStr"
-            } else {
-                this.name
-            }
-
+            // Quality is shown by the player from `quality`; keep the link name clean.
             callback.invoke(
                 newExtractorLink(
                     source = this.name,
-                    name = nameStr,
+                    name = this.name,
                     url = cleanUrl,
                     type = if (m3u8) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
                 ) {

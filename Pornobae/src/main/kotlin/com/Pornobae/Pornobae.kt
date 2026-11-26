@@ -21,15 +21,12 @@ class Pornobae : MainAPI() {
             "category/nubiles-porn/brattysis" to "Bratty Sis",
             "category/adult-time" to "Adult Time",
             "category/nubiles-porn/mom-lover" to "MILF",
-            "category/nubiles-porn/brattysis" to "Bratty Sis",
             "category/bangbros" to "Bangbros",
-            "category/brazzers" to "Brazzers",
             "category/babes-network" to "Babes Network",
             "category/teamskeet/family-strokes" to "Family Strokes",
             "category/adult-empire/my-pervy-family" to "My Pervy Family",
             "category/nubiles-porn/nfbusty" to "NF Busty",
             "category/adult-time/pure-taboo" to "Pure Taboo",
-
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -43,8 +40,8 @@ class Pornobae : MainAPI() {
             url ="$mainUrl/${request.data}/page/$page"
         }
         val document = app.get(url).document
-        val home     = document.select("div.videos-list article").mapNotNull {
-             it.toSearchResult() }
+        val home     = document.select("div.videos-list article, #primary article").mapNotNull {
+             it.toSearchResult() }.distinctBy { it.url }
 
         return newHomePageResponse(
             list    = HomePageList(
@@ -52,14 +49,24 @@ class Pornobae : MainAPI() {
                 list               = home,
                 isHorizontalImages = true
             ),
-            hasNext = true
+            hasNext = home.isNotEmpty()
         )
     }
 
-    private fun Element.toSearchResult(): SearchResponse {
-        val title     = fixTitle(this.select("header span").text().substringAfter(" – ").trim())
-        val href      = fixUrl(this.select("a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("img").attr("data-src"))
+    private fun Element.posterOf(): String? {
+        val img = selectFirst("img")
+        return fixUrlNull(
+            img?.attr("data-src")?.takeIf { it.isNotBlank() }
+                ?: img?.attr("src")?.takeIf { it.isNotBlank() && !it.startsWith("data:") }
+                ?: attr("data-main-thumb").takeIf { it.isNotBlank() }
+        )
+    }
+
+    private fun Element.toSearchResult(): SearchResponse? {
+        val href      = fixUrlNull(this.selectFirst("a[href]")?.attr("href")) ?: return null
+        val rawTitle  = this.select("header span").text().ifBlank { this.selectFirst("a[title]")?.attr("title") ?: "" }
+        val title     = fixTitle(rawTitle.substringAfter(" – ").trim()).ifBlank { return null }
+        val posterUrl = posterOf()
         return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
@@ -89,18 +96,13 @@ class Pornobae : MainAPI() {
         val document = app.get(url).document
 
         val title       = document.selectFirst("meta[property=og:title]")?.attr("content")
-            ?.substringAfter("–") ?:""
+            ?.substringAfter("–")?.trim() ?: ""
         val poster      = fixUrlNull(document.selectFirst("[property='og:image']")?.attr("content"))
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
 
-        val recommendations = document.select("article").map {
-            val rectitle     = fixTitle(it.select("header span").text().substringAfter(" – ").trim())
-            val rechref      = fixUrl(it.select("a").attr("href"))
-            val recposterUrl = fixUrlNull(it.select("img").attr("data-src"))
-            newTvSeriesSearchResponse(rectitle, rechref, TvType.TvSeries) {
-                this.posterUrl = recposterUrl
-            }
-        }
+        val recommendations = document.select("article").mapNotNull { it.toSearchResult() }
+            .filter { it.url != url }
+            .distinctBy { it.url }
         return newMovieLoadResponse(title, url, TvType.NSFW, url) {
             this.posterUrl = poster
             this.plot      = description
@@ -110,12 +112,11 @@ class Pornobae : MainAPI() {
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        document.select("div.responsive-player").map { res ->
-            val href=res.select("iframe").attr("src")
-            loadExtractor(href,subtitleCallback, callback)
+        val iframes = document.select("div.responsive-player iframe[src]").map { fixUrl(it.attr("src")) }
+        iframes.forEach { href ->
+            loadExtractor(href, data, subtitleCallback, callback)
         }
-
-        return true
+        return iframes.isNotEmpty()
     }
 }
 

@@ -1,5 +1,5 @@
 // use an integer for version numbers
-version = 1
+version = 2
 
 cloudstream {
     description = "IncestFlix"
@@ -16,7 +16,7 @@ cloudstream {
 
     tvTypes = listOf("NSFW")
 
-    iconUrl = "https://www.google.com/s2/favicons?domain=www.incestflix.com&sz=%size%"
+    iconUrl = "https://www.google.com/s2/favicons?domain=incestflix.com.co&sz=%size%"
 
     language = "en"
 }

@@ -10,6 +10,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.newExtractorLink
 
@@ -42,15 +43,21 @@ class Hanime : MainAPI() {
         "Referer" to "$mainUrl/",
     )
 
+    // hanime.tv now answers some networks with a Cloudflare "Just a moment..." page (403). When a plain
+    // request gets that, retry through the WebView solver, which also keeps the cf_clearance cookie.
+    private val cfKiller by lazy { CloudflareKiller() }
+
     private suspend fun getVideoJson(id: String): String? {
+        val url = "$mainUrl/api/v8/video?id=$id"
         // retry once with a fresh signature; anything that isn't JSON (Cloudflare/HTML) counts as a failure
         repeat(2) {
-            val text = runCatching {
-                app.get("$mainUrl/api/v8/video?id=$id", headers = apiHeaders(), timeout = 20).text
-            }.getOrNull()
+            val text = runCatching { app.get(url, headers = apiHeaders(), timeout = 20).text }.getOrNull()
             if (text != null && text.trimStart().startsWith("{")) return text
         }
-        return null
+        val viaCf = runCatching {
+            app.get(url, headers = apiHeaders(), interceptor = cfKiller, timeout = 60).text
+        }.getOrNull()
+        return viaCf?.takeIf { it.trimStart().startsWith("{") }
     }
     override val hasQuickSearch = false
     override val hasMainPage = true
@@ -122,9 +129,14 @@ class Hanime : MainAPI() {
         request: MainPageRequest
     ): HomePageResponse {
 
-        val requestGet = app.get("https://hanime.tv/", headers = mapOf("User-Agent" to browserUA))
-        val data = requestGet.text
-        val jsonText = Regex("""window\.__NUXT__=(.*?);</script>""").find(data)?.destructured?.component1()
+        val nuxtRegex = Regex("""window\.__NUXT__=(.*?);</script>""")
+        var data = app.get("$mainUrl/", headers = mapOf("User-Agent" to browserUA)).text
+        if (!nuxtRegex.containsMatchIn(data)) {
+            data = runCatching {
+                app.get("$mainUrl/", headers = mapOf("User-Agent" to browserUA), interceptor = cfKiller, timeout = 60).text
+            }.getOrDefault(data)
+        }
+        val jsonText = nuxtRegex.find(data)?.destructured?.component1()
         val titles = ArrayList<String>()
         val items = ArrayList<HomePageList>()
 

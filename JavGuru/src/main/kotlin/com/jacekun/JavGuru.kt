@@ -19,33 +19,46 @@ class JavGuru : MainAPI() {
     override val hasQuickSearch = false
     override val vpnStatus = VPNStatus.MightBeNeeded
 
+    // "" = site home (latest). Category pages paginate as /category/<slug>/page/N/ (checked live).
+    override val mainPage = mainPageOf(
+        "" to "Latest JAV",
+        "category/english-subbed" to "English Subbed",
+        "category/decensored" to "Decensored",
+        "category/4k" to "4K",
+        "category/FC2" to "FC2",
+        "category/amateur" to "Amateur",
+        "category/idol" to "Idol",
+    )
+
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val all = ArrayList<HomePageList>()
-        val url = if (page <= 1) mainUrl else "$mainUrl/page/$page/"
+        val base = if (request.data.isBlank()) mainUrl else "$mainUrl/${request.data}"
+        val url = if (page <= 1) "$base/" else "$base/page/$page/"
         val doc = app.get(url).document
 
-        val items = doc.select("main.site-main div.row, div.inside-article").mapNotNull {
+        // Cards: div.inside-article > div.imgg > a[href=/<post-id>/<slug>/] > img[alt=title]
+        val items = doc.select("div.inside-article").mapNotNull {
             val aa = it.selectFirst("div.imgg a, a") ?: return@mapNotNull null
-            val link = fixUrlNull(aa.attr("href")) ?: return@mapNotNull null
+            val link = fixUrlNull(aa.attr("href"))
+                ?.takeIf { href -> Regex("""jav\.guru/\d+/""").containsMatchIn(href) }
+                ?: return@mapNotNull null
             val img = aa.selectFirst("img")
             val name = img?.attr("alt")?.takeIf { it.isNotBlank() }
                 ?: it.selectFirst("h2, h3, a")?.text()
                 ?: return@mapNotNull null
-            val image = fixUrlNull(img?.attr("src") ?: img?.attr("data-src"))
+            val image = fixUrlNull(img?.attr("src")?.takeIf { it.isNotBlank() } ?: img?.attr("data-src"))
 
             newMovieSearchResponse(name, link, globaltvType) {
                 this.posterUrl = image
             }
         }.distinctBy { it.url }
 
-        if (items.isNotEmpty()) {
-            all.add(HomePageList("Latest JAV", items, isHorizontalImages = true))
-        }
-
-        return newHomePageResponse(all, hasNext = items.isNotEmpty())
+        return newHomePageResponse(
+            HomePageList(request.name, items, isHorizontalImages = true),
+            hasNext = items.isNotEmpty()
+        )
     }
 
     override suspend fun search(query: String): List<SearchResponse> {

@@ -108,24 +108,29 @@ class MissAVProvider : MainAPI() {
                 .joinToString(";")
                 .ifBlank { runCatching { getAndUnpack(html) }.getOrDefault("") }
 
+            // Unpacked text keeps the JS escapes, e.g. source=\'https://c.surrit.com/<uuid>/playlist.m3u8\';
+            // so allow an optional backslash before the quotes. Master playlist ("source=") first.
             val candidates = linkedSetOf<String>()
-            Regex("""source\w*\s*=\s*['"](https?://[^'"]+\.m3u8[^'"]*)['"]""").findAll(unpacked)
-                .forEach { candidates.add(it.groupValues[1]) }
+            Regex("""source(\w*)\s*=\s*\\?['"](https?://[^'"\\]+\.m3u8[^'"\\]*)\\?['"]""").findAll(unpacked)
+                .sortedBy { it.groupValues[1].isNotEmpty() }
+                .forEach { candidates.add(it.groupValues[2]) }
 
-            // surrit.com now answers 403 to direct playlist requests while b.surrit.com serves the same
-            // playlists, so build (and prefer) the b.surrit.com variant from the video uuid.
-            val uuid = Regex("""surrit\.com\\?/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})""")
-                .find(unpacked)?.groupValues?.get(1)
-                ?: Regex("""surrit\.com\\?/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})""")
-                    .find(html)?.groupValues?.get(1)
+            // The CDN host rotates (surrit.com and b.surrit.com now answer 403, c.surrit.com works),
+            // so keep the host the page gives and only fall back to guessed hosts built from the uuid.
+            val uuidRegex = Regex("""surrit\.com\\?/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})""")
+            val uuid = uuidRegex.find(unpacked)?.groupValues?.get(1)
+                ?: uuidRegex.find(html)?.groupValues?.get(1)
 
             val ordered = buildList {
-                if (uuid != null) add("https://b.surrit.com/$uuid/playlist.m3u8")
-                candidates.forEach { add(it.replace("://surrit.com/", "://b.surrit.com/")) }
                 addAll(candidates)
+                if (uuid != null) {
+                    listOf("c.surrit.com", "b.surrit.com", "surrit.com").forEach { host ->
+                        add("https://$host/$uuid/playlist.m3u8")
+                    }
+                }
             }.distinct()
 
-            val hlsHeaders = mapOf("Origin" to mainUrl, "Referer" to "$mainUrl/")
+            val hlsHeaders = mapOf("Origin" to mainUrl, "Referer" to "$mainUrl/", "User-Agent" to USER_AGENT)
             val playable = ordered.firstOrNull { url ->
                 runCatching {
                     val r = app.get(url, headers = hlsHeaders, timeout = 15)

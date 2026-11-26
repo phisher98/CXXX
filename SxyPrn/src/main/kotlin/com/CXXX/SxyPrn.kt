@@ -9,6 +9,7 @@ import com.lagradost.cloudstream3.utils.httpsify
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.network.CloudflareKiller
 
 class SxyPrn : MainAPI() {
     override var mainUrl = "https://sxyprn.com"
@@ -17,6 +18,10 @@ class SxyPrn : MainAPI() {
     override val hasDownloadSupport = true
     override val vpnStatus = VPNStatus.MightBeNeeded
     override val supportedTypes = setOf(TvType.NSFW)
+
+    // Every sxyprn domain now sits behind a Cloudflare "Just a moment..." check; plain requests get 403.
+    private val cfKiller = CloudflareKiller()
+    private suspend fun cfGet(url: String) = app.get(url, referer = "$mainUrl/", interceptor = cfKiller)
 
     override val mainPage = mainPageOf(
         "$mainUrl/new.html?page=" to "New Videos",
@@ -34,12 +39,12 @@ class SxyPrn : MainAPI() {
         var pageStr = ((page - 1) * 30).toString()
 
         val document = if ("page=" in request.data) {
-            app.get(request.data + pageStr).document
+            cfGet(request.data + pageStr).document
         } else if ("/blog/" in request.data) {
             pageStr = ((page - 1) * 20).toString()
-            app.get(request.data.replace(".html", "$pageStr.html")).document
+            cfGet(request.data.replace(".html", "$pageStr.html")).document
         } else {
-            app.get(request.data.replace(".html", ".html/$pageStr")).document
+            cfGet(request.data.replace(".html", ".html/$pageStr")).document
         }
         val home = document.select("div.main_content div.post_el_small").mapNotNull {
                 it.toSearchResult()
@@ -67,7 +72,7 @@ class SxyPrn : MainAPI() {
         val searchResponse = mutableListOf<SearchResponse>()
         val encoded = query.trim().replace(" ", "+")
         for (i in 0 until 10) {
-            val document = app.get(
+            val document = cfGet(
                 "$mainUrl/search/$encoded.html?page=${i * 30}"
             ).document
             val results = document.select("div.main_content div.post_el_small").mapNotNull {
@@ -80,7 +85,7 @@ class SxyPrn : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = cfGet(url).document
         val title = document.selectFirst("div.post_text")?.text()?.trim()
             ?: document.selectFirst("meta[property=og:title]")?.attr("content") ?: ""
         val poster = httpsify(document.selectFirst("meta[property=og:image]")?.attr("content") ?: "")
@@ -116,13 +121,16 @@ class SxyPrn : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).document
+        val document = cfGet(data).document
+        // Stream files are served from sxyprn.com too, so the player needs the solved Cloudflare cookie.
+        val cfHeaders = runCatching { cfKiller.getCookieHeaders(mainUrl).toMap() }.getOrDefault(emptyMap())
+        var found = false
 
         // 1) Try external links first (site sometimes has direct extlink buttons)
         val extLinks = document.select("div.post_el_wrap a.extlink")
         if (extLinks.isNotEmpty()) {
             extLinks.amap {
-                runCatching { loadExtractor(it.attr("href"), data, subtitleCallback, callback) }
+                runCatching { if (loadExtractor(it.attr("href"), data, subtitleCallback, callback)) found = true }
             }
         }
 
@@ -142,10 +150,12 @@ class SxyPrn : MainAPI() {
                         name   = this.name,
                         url    = url
                     ) {
-                        this.referer = mainUrl
+                        this.referer = "$mainUrl/"
+                        this.headers = cfHeaders
                         this.quality = Qualities.Unknown.value
                     }
                 )
+                found = true
             }
         }
 
@@ -159,13 +169,15 @@ class SxyPrn : MainAPI() {
                         name   = this.name,
                         url    = httpsify(src)
                     ) {
-                        this.referer = mainUrl
+                        this.referer = "$mainUrl/"
+                        this.headers = cfHeaders
                         this.quality = Qualities.Unknown.value
                     }
                 )
+                found = true
             }
         }
 
-        return true
+        return found
     }
 }

@@ -15,5 +15,5 @@ cloudstream {
     **/
     status  = 1 // will be 3 if unspecified
     tvTypes = listOf("NSFW")
-    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/main/eporner.ico"
+    iconUrl = "https://raw.githubusercontent.com/phisher98/Utils/main/eporner.ico"
 }

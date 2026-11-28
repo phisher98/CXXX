@@ -28,7 +28,7 @@ class XPrimeHubProvider: Plugin() {
 
     companion object {
         private const val DOMAINS_URL =
-            "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json"
+            "https://raw.githubusercontent.com/phisher98/Utils/refs/heads/main/domains.json"
         var cachedDomains: Domains? = null
 
         suspend fun getDomains(forceRefresh: Boolean = false): Domains? {

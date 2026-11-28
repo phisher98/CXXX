@@ -280,11 +280,10 @@ class XPrimeHub : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ) {
         // Direct host checks
-        if (link.contains("pixeldrain.com")) {
-            val id = link.substringAfterLast("/").substringBefore("?")
-            if (id.isNotBlank()) {
+        if (link.contains("pixeldrain.")) {
+            pixelDrainDownload(link)?.let { direct ->
                 callback.invoke(
-                    newExtractorLink("PixelDrain", "PixelDrain", "https://pixeldrain.com/api/file/$id?download", ExtractorLinkType.VIDEO) {
+                    newExtractorLink("PixelDrain", "PixelDrain", direct, ExtractorLinkType.VIDEO) {
                         this.quality = Qualities.Unknown.value
                     }
                 )
@@ -312,6 +311,8 @@ class XPrimeHub : MainAPI() {
         // Intermediate landing page (nexdrive, etc.): fetch and extract buttons/links
         runCatching {
             val doc = app.get(link, timeout = 15L, allowRedirects = true).document
+            // e.g. "Andhadhundh (2026) S01 Part 2 Hindi HDRip 720p [1GB] - Nexdrive.Beer" -> file label for FastDL
+            val pageLabel = doc.title().substringBefore(" – Nexdrive").substringBefore(" - Nexdrive").trim().ifBlank { null }
             val extractedUrls = doc.select("a.xp-download-btn, button.btn, a.btn, a.button, h2 a, h4 a, h5 a, div.card-body a, a[href]")
                 .filterNot { el ->
                     val text = el.text()
@@ -326,16 +327,17 @@ class XPrimeHub : MainAPI() {
 
             extractedUrls.amap { streamUrl ->
                 when {
-                    streamUrl.contains("pixeldrain.com") -> {
-                        val id = streamUrl.substringAfterLast("/").substringBefore("?")
-                        callback.invoke(
-                            newExtractorLink("PixelDrain", "PixelDrain", "https://pixeldrain.com/api/file/$id?download", ExtractorLinkType.VIDEO) {
-                                this.quality = Qualities.Unknown.value
-                            }
-                        )
+                    streamUrl.contains("pixeldrain.") -> {
+                        pixelDrainDownload(streamUrl)?.let { direct ->
+                            callback.invoke(
+                                newExtractorLink("PixelDrain", "PixelDrain", direct, ExtractorLinkType.VIDEO) {
+                                    this.quality = Qualities.Unknown.value
+                                }
+                            )
+                        }
                     }
                     streamUrl.contains("fastdl") -> {
-                        FastDL().getUrl(streamUrl, link, subtitleCallback, callback)
+                        FastDL().resolve(streamUrl, link, pageLabel, callback)
                     }
                     streamUrl.contains("vcloud") || streamUrl.contains("hubcloud") || streamUrl.contains("hubdrive") -> {
                         VCloud().getUrl(streamUrl, link, subtitleCallback, callback)
@@ -395,7 +397,18 @@ class FastDL : ExtractorApi() {
         referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
+    ) = resolve(url, referer, null, callback)
+
+    /** [fileLabel]: file name from the page that linked here (FastDL pages carry none). */
+    suspend fun resolve(
+        url: String,
+        referer: String?,
+        fileLabel: String?,
+        callback: (ExtractorLink) -> Unit
     ) {
+        val displayName = if (fileLabel.isNullOrBlank()) name else "$name $fileLabel"
+        val quality = qualityFromName(fileLabel)
+
         // Direct link parameter: dl.php?link=https://...
         if (url.contains("link=")) {
             val direct = url.substringAfter("link=").substringBefore("&")
@@ -403,10 +416,10 @@ class FastDL : ExtractorApi() {
                 callback.invoke(
                     newExtractorLink(
                         name,
-                        name,
+                        displayName,
                         direct,
                         ExtractorLinkType.VIDEO
-                    ) { this.quality = Qualities.Unknown.value }
+                    ) { this.quality = quality }
                 )
                 return
             }
@@ -424,10 +437,10 @@ class FastDL : ExtractorApi() {
                 callback.invoke(
                     newExtractorLink(
                         name,
-                        name,
+                        displayName,
                         direct,
                         ExtractorLinkType.VIDEO
-                    ) { this.quality = Qualities.Unknown.value }
+                    ) { this.quality = quality }
                 )
             }
         }
@@ -553,9 +566,10 @@ class VCloud : ExtractorApi() {
                     }
                 }
 
-                text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) || link.contains("pixeldrain.com") -> {
-                    val id = link.substringAfterLast("/").substringBefore("?")
-                    val finalURL = "https://pixeldrain.com/api/file/$id?download"
+                text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) || link.contains("pixeldrain.") -> {
+                    // The button's href is a placeholder; the page's JS replaces it with `var pxl`.
+                    val realLink = pxlRegex.find(document.html())?.groupValues?.getOrNull(1) ?: link
+                    val finalURL = pixelDrainDownload(realLink) ?: return@amap
                     callback.invoke(
                         newExtractorLink(
                             "PixelDrain",
@@ -638,8 +652,21 @@ class VCloud : ExtractorApi() {
 
     companion object {
         val excludedHosts = setOf("bit.ly", "t.me", "google.com", "snvhost", "idm", "ida")
+        private val pxlRegex = Regex("""var\s+pxl\s*=\s*["']([^"']+)["']""")
     }
 }
+
+/** pixeldrain.{com,dev}/u/<id> -> direct download URL on the same host. */
+fun pixelDrainDownload(link: String): String? {
+    if (link.contains("/api/file/")) return link
+    val id = link.substringAfterLast("/").substringBefore("?").ifBlank { return null }
+    val host = Regex("""https?://[^/]+""").find(link)?.value ?: "https://pixeldrain.com"
+    return "$host/api/file/$id?download"
+}
+
+fun qualityFromName(name: String?): Int =
+    Regex("""(\d{3,4})[pP]""").find(name.orEmpty())?.groupValues?.getOrNull(1)?.toIntOrNull()
+        ?: Qualities.Unknown.value
 
 fun getSearchQuality(check: String?): SearchQuality? {
     val s = check ?: return null
